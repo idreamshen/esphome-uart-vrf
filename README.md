@@ -1,5 +1,10 @@
 # esphome-uart-vrf
 
+## 功能
+1. 实现了与常用的 vrf 进行 UART 或 RS485 通信
+2. 自动探测 vrf 的通信协议，当前支持 demry 和 zhonghong 两种协议
+3. 自动生成 ha climate 实体
+
 ## core example
 ```yaml
 external_components:
