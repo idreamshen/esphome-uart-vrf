@@ -12,6 +12,7 @@ external_components:
   - source:
       type: git
       url: https://github.com/idreamshen/esphome-uart-vrf
+    refresh: 5min
 
 logger:
   baud_rate: 0
