@@ -9,7 +9,6 @@ void UartVrfClimate::setup() {
 }
 
 void UartVrfClimate::dump_config() {
-    ESP_LOGD(TAG, "UartVrfClimate::dump_config");
 }
 
 void UartVrfClimate::control(const climate::ClimateCall &call) {
