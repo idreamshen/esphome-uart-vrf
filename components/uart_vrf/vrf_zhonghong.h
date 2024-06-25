@@ -31,6 +31,8 @@ namespace vrf_protocol {
         uint8_t outdoor_addr_;
         // 内机地址
         uint8_t indoor_addr_;
+        // 上一次控制时间
+        unsigned long last_time_ctrl{0};
 
     };
 

@@ -186,6 +186,13 @@ namespace vrf_protocol {
     }
 
     VrfCmd VrfZhonghongClimate::cmd_query() {
+        unsigned long now = millis();
+        if (now - last_time_ctrl < 2000) {
+            // 如果控制指令与查询指令间隔小于 2s
+            // 则不进行查询
+            return VrfCmd();
+        }
+
         std::vector<uint8_t> cmd = {
             this->slave_addr_, 
             uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY), 
@@ -274,6 +281,8 @@ namespace vrf_protocol {
             cmd = VrfCmd({cmd_mode, cmd_on_off});
         }
 
+        last_time_ctrl = millis();
+
         return cmd;
     }
 
@@ -299,6 +308,9 @@ namespace vrf_protocol {
 
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
+
+        last_time_ctrl = millis();
+
         return VrfCmd(cmd);
     }
 
@@ -333,6 +345,9 @@ namespace vrf_protocol {
         }
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
+
+        last_time_ctrl = millis();
+
         return VrfCmd(cmd);
     }
 }
