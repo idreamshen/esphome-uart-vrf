@@ -94,6 +94,10 @@ void UartVrfComponent::setup() {
     this->vrf_gateway_wrapper_ = new VrfGatewayWrapper();
     this->vrf_gateway_wrapper_->add_gateway(demryGateway);
     this->vrf_gateway_wrapper_->add_gateway(zhonghongGateway);
+
+    this->set_interval("fire_cmd", 300, [this] { this->fire_cmd(); });
+    this->set_interval("find_climates", 5000, [this] { this->find_climates(); });
+    this->set_interval("query_next_climate", 1000, [this] { this->query_next_climate(); });
 }
 
 void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* climate) {
@@ -165,26 +169,6 @@ void UartVrfComponent::on_climate_state_callback(vrf_protocol::VrfClimate* vrf_c
     target_climate->publish_state();
 }
 
-void UartVrfComponent::update() {
-    if (this->vrf_gateway_wrapper_ == nullptr) {
-        return;
-    }
-
-    this->fire_cmd();
-
-    if (this->vrf_gateway_wrapper_->get_climates().size() == 0) {
-        vrf_protocol::VrfCmd cmd = this->vrf_gateway_wrapper_->cmd_find_climates();
-        this->send_cmd(cmd);
-    } else {
-        unsigned long now = millis();
-        if (now - last_time_heartbeat_cmds_ > 1000) {
-            last_time_heartbeat_cmds_ = now;
-            vrf_protocol::VrfCmd cmd = this->vrf_gateway_wrapper_->cmd_query_next_climate();
-            this->send_cmd(cmd);
-        }
-    }
-}
-
 void UartVrfComponent::loop() {
     if (this->vrf_gateway_wrapper_ == nullptr) {
         return;
@@ -209,6 +193,17 @@ void UartVrfComponent::send_cmd(vrf_protocol::VrfCmd cmd) {
     this->fire_cmd();
 }
 
+void UartVrfComponent::find_climates() {
+    if (this->vrf_gateway_wrapper_ == nullptr) {
+        return;
+    }
+
+    if (this->vrf_gateway_wrapper_->get_climates().size() == 0) {
+        vrf_protocol::VrfCmd cmd = this->vrf_gateway_wrapper_->cmd_find_climates();
+        this->send_cmd(cmd);
+    }
+}
+
 void UartVrfComponent::fire_cmd() {
     unsigned long now = millis();
     if (now - last_time_fire_cmd < 100) {
@@ -225,6 +220,13 @@ void UartVrfComponent::fire_cmd() {
     this->pending_cmds_.erase(this->pending_cmds_.begin(), this->pending_cmds_.begin() + 1);
     ESP_LOGD(TAG, "uart send %s", format_hex_pretty(cmd_val).c_str());
     write_array(cmd_val.data(), cmd_val.size());
+}
+
+void UartVrfComponent::query_next_climate() {
+    if (this->pending_cmds_.size() <= 2) {
+        vrf_protocol::VrfCmd cmd = this->vrf_gateway_wrapper_->cmd_query_next_climate();
+        this->send_cmd(cmd);
+    }
 }
 
   

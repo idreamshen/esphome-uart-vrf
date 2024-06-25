@@ -10,7 +10,7 @@ AUTO_LOAD = ['climate']
 VRF_ID = 'uart_vrf_id'
 
 uart_vrf_ns = cg.esphome_ns.namespace('uart_vrf')
-UartVrfComponent = uart_vrf_ns.class_('UartVrfComponent', cg.PollingComponent, uart.UARTDevice)
+UartVrfComponent = uart_vrf_ns.class_('UartVrfComponent', cg.Component, uart.UARTDevice)
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(UartVrfComponent),

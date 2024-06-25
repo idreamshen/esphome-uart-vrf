@@ -36,13 +36,12 @@ class VrfGatewayWrapper {
   void incr_next_idx();
 };
 
-class UartVrfComponent : public PollingComponent, public uart::UARTDevice {
+class UartVrfComponent : public Component, public uart::UARTDevice {
 public:
-  UartVrfComponent(uart::UARTComponent *uartComponent) : PollingComponent(300), UARTDevice(uartComponent) {
+  UartVrfComponent(uart::UARTComponent *uartComponent) : Component(), UARTDevice(uartComponent) {
     this->uart_ = uartComponent;
   };
   void setup() override;
-  void update() override;
   void loop() override;
   void send_cmd(vrf_protocol::VrfCmd cmd);
   uart::UARTComponent* get_uart() { return this->uart_; };
@@ -58,6 +57,9 @@ protected:
   unsigned long last_time_fire_cmd{0};
 
   void fire_cmd();
+  void find_climates();
+  void query_next_climate();
+  
 };
 
 }
