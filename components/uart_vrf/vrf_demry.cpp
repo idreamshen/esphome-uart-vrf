@@ -163,7 +163,12 @@ namespace vrf_protocol {
             return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_COOL;
         } else if (mode == VrfClimateMode::CLIMATE_MODE_HEAT) {
             return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_HEAT;
+        } else if (mode == VrfClimateMode::CLIMATE_MODE_FAN_ONLY) {
+            return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_FAN;
+        } else if (mode == VrfClimateMode::CLIMATE_MODE_DRY) {
+            return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_DRY;
         }
+        
         return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_HOLD;
     }
 
