@@ -1,5 +1,31 @@
 # esphome-uart-vrf
 
+## core example
+```yaml
+external_components:
+  - source:
+      type: git
+      url: https://github.com/idreamshen/esphome-uart-vrf
+    refresh: 5min
+
+logger:
+  # esp8266 必须关闭串口日志
+  # esp32 可正常打开串口日志
+  baud_rate: 0 
+  
+uart:
+  - id: myuart1
+    tx_pin: 1
+    rx_pin: 3
+    baud_rate: 9600
+
+uart_vrf:
+
+climate:
+
+```
+
+## full example
 ```yaml
 esphome:
   name: vrf-8266
