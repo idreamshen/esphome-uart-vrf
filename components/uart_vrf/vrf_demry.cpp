@@ -5,6 +5,8 @@
 
 namespace vrf_protocol {
 
+    static const char *const TAG = "vrf_protocol.demry"; 
+
     void VrfDemryGateway::consume_data_handle_found_climates() {
         uint8_t tmp[4] = {this->data_[5], this->data_[6], this->data_[7], this->data_[8]};
         for (int i=0; i < 4; i++) {
@@ -168,7 +170,7 @@ namespace vrf_protocol {
         } else if (mode == VrfClimateMode::CLIMATE_MODE_DRY) {
             return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_DRY;
         }
-        
+
         return VrfDemryClimateMode::DEMRY_CLIMATE_MODE_HOLD;
     }
 

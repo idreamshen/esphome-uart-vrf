@@ -8,7 +8,6 @@
 
 namespace vrf_protocol {
 
-static const char *const TAG = "vrf_protocol"; 
 uint8_t checksum(std::vector<uint8_t> cmd);
 
 class VrfCmd {

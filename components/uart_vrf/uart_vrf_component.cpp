@@ -8,6 +8,8 @@
 namespace esphome {
 namespace uart_vrf {
 
+static const char *const TAG = "uart_vrf"; 
+
 void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway) { 
     this->gateways_.push_back(gateway); 
 }

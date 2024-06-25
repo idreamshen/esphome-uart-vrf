@@ -15,8 +15,6 @@ namespace uart_vrf {
 
 class UartVrfClimate; 
 
-static const char *const TAG = "uart_vrf"; 
-
 class VrfGatewayWrapper {
 
   public:

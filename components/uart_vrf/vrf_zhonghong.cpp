@@ -5,6 +5,8 @@
 
 namespace vrf_protocol {
 
+    static const char *const TAG = "vrf_protocol.zhonghong"; 
+
     void VrfZhonghongGateway::consume_data_handle_found_climates() {
         uint8_t num = this->data_[3]; // 空调数量
         for (uint8_t i = 0; i < num; i++)
