@@ -97,7 +97,6 @@ void UartVrfComponent::setup() {
 }
 
 void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* climate) {
-    ESP_LOGD(TAG, "on_climate_create_callback");
     climate->add_on_state_callback([this](vrf_protocol::VrfClimate* climate) {
         this->on_climate_state_callback(climate);
     });
@@ -112,8 +111,6 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
 }
 
 void UartVrfComponent::on_climate_state_callback(vrf_protocol::VrfClimate* vrf_climate) {
-    ESP_LOGD(TAG, "on_climate_state_callback, %d, %d", vrf_climate->get_target_temperature(), vrf_climate->get_mode());
-
     UartVrfClimate* target_climate = nullptr;
     for (auto& climate : this->climates_) {
         if (climate->get_core_climate() == vrf_climate) {
@@ -221,6 +218,8 @@ void UartVrfComponent::fire_cmd() {
     if (this->pending_cmds_.size() <= 0) {
         return;
     }
+
+    last_time_fire_cmd = now;
 
     std::vector<uint8_t> cmd_val = this->pending_cmds_[0];
     this->pending_cmds_.erase(this->pending_cmds_.begin(), this->pending_cmds_.begin() + 1);
