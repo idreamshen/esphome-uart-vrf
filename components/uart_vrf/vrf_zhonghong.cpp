@@ -1,6 +1,7 @@
 #include <bitset>
 
 #include "esphome.h"
+#include "esphome/core/hal.h"
 #include "vrf_zhonghong.h"
 
 namespace vrf_protocol {
