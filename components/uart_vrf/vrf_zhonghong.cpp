@@ -187,7 +187,7 @@ namespace vrf_protocol {
     }
 
     VrfCmd VrfZhonghongClimate::cmd_query() {
-        unsigned long now = millis();
+        unsigned long now = esphome::millis();
         if (now - last_time_ctrl < 2000) {
             // 如果控制指令与查询指令间隔小于 2s
             // 则不进行查询
@@ -282,7 +282,7 @@ namespace vrf_protocol {
             cmd = VrfCmd({cmd_mode, cmd_on_off});
         }
 
-        last_time_ctrl = millis();
+        last_time_ctrl = esphome::millis();
 
         return cmd;
     }
@@ -310,7 +310,7 @@ namespace vrf_protocol {
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
 
-        last_time_ctrl = millis();
+        last_time_ctrl = esphome::millis();
 
         return VrfCmd(cmd);
     }
@@ -347,7 +347,7 @@ namespace vrf_protocol {
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
 
-        last_time_ctrl = millis();
+        last_time_ctrl = esphome::millis();
 
         return VrfCmd(cmd);
     }
