@@ -23,19 +23,13 @@ jobs:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
-    - name: Rename Bin
-      id: rename-bin
-      run: |
-        cd ${{ steps.esphome-build.outputs.name }}
-        mv *.factory.bin ${{ matrix.config_name }}.factory.bin
-        mv *.ota.bin ${{ matrix.config_name }}.ota.bin
     - name: Upload bin
       uses: actions/upload-artifact@v4.4.3
       with:
         # Artifact name
         name: "${{ matrix.config_name }}-bin"
         # A file, directory or wildcard pattern that describes what to upload
-        path: ${{ steps.esphome-build.outputs.name }}
+        path: ${{ steps.esphome-build.outputs.name }}/*.bin
         # The desired behavior if no files are found using the provided path.
         retention-days: 3
 
