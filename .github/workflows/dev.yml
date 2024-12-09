@@ -26,7 +26,6 @@ jobs:
         yaml-file: "${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
-        cache: true
     - name: Upload bin
       uses: actions/upload-artifact@v4.4.3
       with:
