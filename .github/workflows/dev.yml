@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        config_yaml: [example_esp01s.yaml]
+        config_name: [example_esp01s]
 
     steps:
     - name: Checkout repo
@@ -23,7 +23,7 @@ jobs:
       id: esphome-build
       uses: esphome/build-action@v4.0.4
       with:
-        yaml-file: ${{ matrix.config_yaml }}
+        yaml-file: "${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
         cache: true
@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v4.4.3
       with:
         # Artifact name
-        name: "bin"
+        name: "${{ martix.config_name }}-bin"
         # A file, directory or wildcard pattern that describes what to upload
         path: ${{ steps.esphome-build.outputs.name }}
         # The desired behavior if no files are found using the provided path.
