@@ -23,10 +23,13 @@ jobs:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
+    - name: Change dir
+      run: |
+        cd ${{ steps.esphome-build.outputs.name }}
     - name: Upload file to release
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ${{ steps.esphome-build.outputs.name }}/*bin
+        file: *bin
         tag: ${{ github.ref }}
         overwrite: true
