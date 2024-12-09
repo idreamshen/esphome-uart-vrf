@@ -7,13 +7,10 @@ on:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         config_name: [esp01s, esp32wroom32d]
-
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
@@ -35,8 +32,9 @@ jobs:
         path: ${{ steps.esphome-build.outputs.name }}
         # The desired behavior if no files are found using the provided path.
         retention-days: 3
+
   notify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Notify artifact link
