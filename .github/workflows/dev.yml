@@ -1,0 +1,49 @@
+name: Dev
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        config_name: [esp01s, esp32wroom32d]
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Build
+      id: esphome-build
+      uses: esphome/build-action@v4.0.4
+      with:
+        yaml-file: "example/${{ matrix.config_name }}.yaml"
+        version: 2024.11.3
+        platform: linux/amd64
+    - name: Upload bin
+      uses: actions/upload-artifact@v4.4.3
+      with:
+        # Artifact name
+        name: "${{ steps.esphome-build.outputs.name }}-bin"
+        # A file, directory or wildcard pattern that describes what to upload
+        path: ${{ steps.esphome-build.outputs.name }}/*.bin
+        # The desired behavior if no files are found using the provided path.
+        retention-days: 3
+
+  notify:
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Notify artifact link
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          hide_and_recreate: true
+          hide_classify: "OUTDATED"
+          message: |
+            You can download the binary from the [Artifacts section](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for debugging.
+
+            - Commit Sha: ${{ github.event.pull_request.head.sha }}
+            - Action run number: **${{ github.run_number }}**

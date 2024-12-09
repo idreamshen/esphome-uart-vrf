@@ -1,0 +1,66 @@
+esphome:
+  name: uart-vrf-esp01s
+  friendly_name: uart-vrf-esp01s
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/idreamshen/esphome-uart-vrf
+
+uart:
+  - id: myuart1
+    tx_pin: 1
+    rx_pin: 3
+    baud_rate: 9600
+
+uart_vrf:
+
+climate:
+
+esp8266:
+  board: esp01_1m
+
+logger:
+  baud_rate: 0
+
+api:
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+
+wifi:
+  ap:
+    ssid: "Vrf Fallback Hotspot"
+    password: "12345678"
+
+captive_portal:
+
+web_server:
+  port: 80
+  local: true
+
+debug:
+  update_interval: 60s
+
+switch:
+  - platform: factory_reset
+    name: Reset
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    fragmentation:
+      name: "Heap Fragmentation"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"

@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        config_name: [esp01s, esp32wroom32d]
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Build
+      id: esphome-build
+      uses: esphome/build-action@v4.0.4
+      with:
+        yaml-file: "example/${{ matrix.config_name }}.yaml"
+        version: 2024.11.3
+        platform: linux/amd64
+    - name: Upload file to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{ steps.esphome-build.outputs.name }}/*.bin
+        tag: ${{ github.ref }}
+        overwrite: true

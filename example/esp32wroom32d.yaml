@@ -1,0 +1,106 @@
+esphome:
+  name: uart-vrf-esp32wroom32d
+  friendly_name: uart-vrf-esp32wroom32d
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+    advanced:
+      ignore_efuse_mac_crc: true
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/idreamshen/esphome-uart-vrf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ap:
+    ssid: "Vrf Fallback Hotspot"
+    password: "12345678"
+
+captive_portal:
+
+uart:
+  - id: myuart1
+    tx_pin: 17
+    rx_pin: 16
+    baud_rate: 9600
+    debug:
+      direction: RX
+      dummy_receiver: false
+      sequence:
+        - light.turn_on: receive_led
+        - delay: 200ms
+        - light.turn_off: receive_led
+
+output:
+  - platform: gpio
+    pin:
+      number: 15
+      inverted: true
+    id: led_output
+
+light:
+  - platform: binary
+    name: "RX LED"
+    output: led_output
+    id: receive_led
+    internal: true
+
+uart_vrf:
+
+climate:
+
+web_server:
+  port: 80
+  local: true
+
+debug:
+  update_interval: 60s
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 2
+      inverted: true
+    internal: true
+    name: reset_binary_sensor
+    on_multi_click:
+      - timing:
+          - ON for at least 3s
+          - OFF for at least 0.5s
+        then:
+          - button.press: button_reset
+
+button:
+  - platform: factory_reset
+    name: Reset Button
+    id: button_reset
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
