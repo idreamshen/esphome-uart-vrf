@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        config_name: [example_esp01s]
+        config_name: [example_esp01s, example_esp32wroom32d]
 
     steps:
     - name: Checkout repo
