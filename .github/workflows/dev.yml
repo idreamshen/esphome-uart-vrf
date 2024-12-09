@@ -20,13 +20,13 @@ jobs:
       with:
         submodules: 'recursive'
     - name: Build
-        id: esphome-build
-        uses: esphome/build-action@v4.0.4
-        with:
-          yaml-file: ${{ matrix.config_yaml }}
-          version: 2024.11.3
-          platform: linux/amd64
-          cache: true
+      id: esphome-build
+      uses: esphome/build-action@v4.0.4
+      with:
+        yaml-file: ${{ matrix.config_yaml }}
+        version: 2024.11.3
+        platform: linux/amd64
+        cache: true
     - name: Upload bin
       uses: actions/upload-artifact@v4.4.3
       with:
