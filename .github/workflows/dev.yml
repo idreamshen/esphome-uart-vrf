@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        config_name: [example_esp01s, example_esp32wroom32d]
+        config_name: [esp01s, esp32wroom32d]
 
     steps:
     - name: Checkout repo
@@ -23,7 +23,7 @@ jobs:
       id: esphome-build
       uses: esphome/build-action@v4.0.4
       with:
-        yaml-file: "${{ matrix.config_name }}.yaml"
+        yaml-file: "example/${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
     - name: Upload bin
