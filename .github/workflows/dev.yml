@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v4.4.3
       with:
         # Artifact name
-        name: "${{ martix.config_name }}-bin"
+        name: "${{ matrix.config_name }}-bin"
         # A file, directory or wildcard pattern that describes what to upload
         path: ${{ steps.esphome-build.outputs.name }}
         # The desired behavior if no files are found using the provided path.
