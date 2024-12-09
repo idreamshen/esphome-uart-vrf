@@ -26,6 +26,7 @@ jobs:
     - name: Test Bin
       run: |
         ls -lha
+        ls uart-vrf-esp01s-esp8266 -lha
     - name: Rename Bin
       id: rename-bin
       run: |
