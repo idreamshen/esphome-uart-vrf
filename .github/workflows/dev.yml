@@ -23,6 +23,14 @@ jobs:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
         version: 2024.11.3
         platform: linux/amd64
+    - name: Test Bin
+      run: |
+        ls -lha
+    - name: Rename Bin
+      id: rename-bin
+      run: |
+        mv ${{ steps.esphome-build.outputs.name }}.factory.bin ${{ matrix.config_name }}.factory.bin
+        mv ${{ steps.esphome-build.outputs.name }}.ota.bin ${{ matrix.config_name }}.ota.bin
     - name: Upload bin
       uses: actions/upload-artifact@v4.4.3
       with:
