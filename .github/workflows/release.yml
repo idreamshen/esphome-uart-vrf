@@ -26,6 +26,7 @@ jobs:
     - name: Keep Bin
       run: |
         find ${{ steps.esphome-build.outputs.name }} -type f ! -name "*.bin" -exec rm -f {} +
+        ls -lha ${{ steps.esphome-build.outputs.name }}
     - name: Upload file to release
       uses: svenstaro/upload-release-action@v2
       with:
