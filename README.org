@@ -32,11 +32,6 @@ external_components:
       url: https://github.com/idreamshen/esphome-uart-vrf
       ref: v1.1.1
 
-logger:
-  # esp8266 必须关闭串口日志
-  # esp32 可正常打开串口日志
-  baud_rate: 0
-
 uart:
   - id: myuart1
     tx_pin: 1
