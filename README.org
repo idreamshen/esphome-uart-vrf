@@ -46,3 +46,6 @@ climate:
 * 完整配置
 - example/esp01s.yaml: 可用于 esp01s 与 esp8266
 - example/esp32wroom32d.yaml: 可用于德姆瑞 vrf 上板的 ESP32-WROOM-32D 芯片
+
+* 改装成品
+闲鱼搜索“VRF 改装”，也可访问 https://p.goofish.com/p/J08WFFKk
