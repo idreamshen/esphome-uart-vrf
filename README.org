@@ -1,0 +1,51 @@
+* ESPHome Uart VRF
+中央空调 VRF 网关串口通信 ESPHome 固件，支持德姆瑞 DEMRY、平头熊 PTXZN、中弘系列。
+
+* 功能
+1. 实现了与常用的 vrf 进行 UART 或 RS485 通信
+2. 自动探测 vrf 的通信协议，当前支持 demry 和 zhonghong 两种协议
+3. 自动生成 ha climate 实体
+
+* 固件说明
+[[https://github.com/idreamshen/esphome-uart-vrf/releases][Release]] 已生成可直接烧录的固件
+- uart-vrf-esp01s-esp8266.factory.bin: 完整固件，适用于 esp8266 芯片。
+- uart-vrf-esp01s-esp8266.ota.bin: OTA 固件，适用于 esp8266 芯片。
+- uart-vrf-esp32wroom32d-esp32.factory.bin: 完整固件，适用于 ESP32-WROOM-32D 芯片（德姆瑞款上板芯片）
+- uart-vrf-esp32wroom32d-esp32.ota.bin: OTA 固件，适用于 ESP32-WROOM-32D 芯片（德姆瑞款上板芯片）
+
+* 测试机型
+以下机型经过测试
+|--------+--------------+--------------------------------+-------------------------------------------------|
+| 品牌   | 型号         | 图片                           | 备注                                            |
+|--------+--------------+--------------------------------+-------------------------------------------------|
+| 中弘   | B17          | [[/images/zhonghong_b17_main.jpg]] | 需要在中弘 web 后台将 RS485 校验改为无          |
+| 德姆瑞 | 第三代       | [[/images/demry_3th_main.jpg]]     |                                                 |
+| 德姆瑞 | 第四代       | [[/images/demry_4th_main.jpg]]     | 部分款 RS485 无法正常通信，需改为与上板串口通信 |
+| 平头熊 | 与德姆瑞一致 |                                | 部分款 RS485 无法正常通信，需改为与上板串口通信 |
+|--------+--------------+--------------------------------+-------------------------------------------------|
+
+* 核心配置
+#+begin_src yaml
+external_components:
+  - source:
+      type: git
+      url: https://github.com/idreamshen/esphome-uart-vrf
+      ref: v1.1.1
+
+uart:
+  - id: myuart1
+    tx_pin: 1
+    rx_pin: 3
+    baud_rate: 9600
+
+uart_vrf:
+
+climate:
+#+end_src
+
+* 完整配置
+- example/esp01s.yaml: 可用于 esp01s 与 esp8266
+- example/esp32wroom32d.yaml: 可用于德姆瑞 vrf 上板的 ESP32-WROOM-32D 芯片
+
+* 改装成品
+如果希望直接使用成品改装套件，可在闲鱼搜索“VRF 改装”，也可访问 https://p.goofish.com/p/J08WFFKk 进行购买
