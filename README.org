@@ -1,7 +1,15 @@
 * ESPHome Uart VRF
 esphome vrf 串口通信。支持德姆瑞 DEMRY、小米平头熊 PTXZN、中弘系列。
 
-[[/images/zhonghong_main.jpg][zhonghong]]
+以下型号测试通过
+|--------+--------+----------------------------|
+| 品牌   | 型号   | 图片                       |
+|--------+--------+----------------------------|
+| 中弘   | B17    | [[/images/zhonghong_main.jpg]] |
+| 德姆瑞 | 第三代 |                            |
+| 德姆瑞 | 第四代 |                            |
+| 平头熊 |        |                            |
+|--------+--------+----------------------------|
 
 * 固件说明
 [[https://github.com/idreamshen/esphome-uart-vrf/releases][Release]] 已生成可直接烧录的固件
