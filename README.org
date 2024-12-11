@@ -1,0 +1,35 @@
+* ESPHome Uart VRF
+esphome vrf 串口通信。支持德姆瑞 DEMRY、小米平头熊 PTXZN、中弘系列。
+
+* 功能
+1. 实现了与常用的 vrf 进行 UART 或 RS485 通信
+2. 自动探测 vrf 的通信协议，当前支持 demry 和 zhonghong 两种协议
+3. 自动生成 ha climate 实体
+
+* 核心配置
+#+begin_src yaml
+external_components:
+  - source:
+      type: git
+      url: https://github.com/idreamshen/esphome-uart-vrf
+      ref: v1.1.1
+
+logger:
+  # esp8266 必须关闭串口日志
+  # esp32 可正常打开串口日志
+  baud_rate: 0
+
+uart:
+  - id: myuart1
+    tx_pin: 1
+    rx_pin: 3
+    baud_rate: 9600
+
+uart_vrf:
+
+climate:
+#+end_src
+
+* 完整配置
+- example/esp01s.yaml: 可用于 esp01s 与 esp8266
+- example/esp32wroom32d.yaml: 可用于德穆瑞 vrf 上板的 ESP32-WROOM-32D 芯片
