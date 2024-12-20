@@ -1,6 +1,7 @@
 esphome:
   name: uart-vrf-esp32wroom32d
   friendly_name: uart-vrf-esp32wroom32d
+  name_add_mac_suffix: true
 
 esp32:
   board: esp32dev
@@ -27,7 +28,6 @@ ota:
 
 wifi:
   ap:
-    ssid: "Vrf Fallback Hotspot"
     password: "12345678"
 
 captive_portal:

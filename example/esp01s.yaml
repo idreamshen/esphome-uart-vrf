@@ -1,6 +1,7 @@
 esphome:
   name: uart-vrf-esp01s
   friendly_name: uart-vrf-esp01s
+  name_add_mac_suffix: true
 
 external_components:
   - source:
@@ -31,7 +32,6 @@ ota:
 
 wifi:
   ap:
-    ssid: "Vrf Fallback Hotspot"
     password: "12345678"
 
 captive_portal:
