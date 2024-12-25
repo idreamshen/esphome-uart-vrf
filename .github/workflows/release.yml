@@ -21,7 +21,7 @@ jobs:
       uses: esphome/build-action@v4.0.4
       with:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
-        version: 2024.11.3
+        version: 2024.12.2
         platform: linux/amd64
     - name: Upload file to release
       uses: svenstaro/upload-release-action@v2
