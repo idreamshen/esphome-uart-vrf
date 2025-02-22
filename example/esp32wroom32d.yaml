@@ -73,20 +73,6 @@ web_server:
 debug:
   update_interval: 60s
 
-binary_sensor:
-  - platform: gpio
-    pin:
-      number: 2
-      inverted: true
-    internal: true
-    name: reset_binary_sensor
-    on_multi_click:
-      - timing:
-          - ON for at least 3s
-          - OFF for at least 0.5s
-        then:
-          - button.press: button_reset
-
 button:
   - platform: factory_reset
     name: Reset Button
