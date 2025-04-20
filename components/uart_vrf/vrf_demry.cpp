@@ -1,5 +1,5 @@
 #include <bitset>
-
+#include "esphome/core/log.h"
 #include "esphome.h"
 #include "vrf_demry.h"
 
