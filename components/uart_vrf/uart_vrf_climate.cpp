@@ -7,7 +7,7 @@ namespace uart_vrf {
 static const char *const TAG = "uart_vrf.climate"; 
 
 void UartVrfClimate::setup() {
-    ESP_LOGD(TAG, "UartVrfClimate::setup");
+   // ESP_LOGD(TAG, "UartVrfClimate::setup");
 }
 
 void UartVrfClimate::dump_config() {
