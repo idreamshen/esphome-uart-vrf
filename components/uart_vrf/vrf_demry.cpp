@@ -1,5 +1,5 @@
 #include <bitset>
-#include "esphome/core/log.h"
+//#include "esphome/core/log.h"
 #include "esphome.h"
 #include "vrf_demry.h"
 
@@ -104,7 +104,7 @@ namespace vrf_protocol {
             }
 
             // erase 10 bytes
-            esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
+           // esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + 10);
         }
     }
