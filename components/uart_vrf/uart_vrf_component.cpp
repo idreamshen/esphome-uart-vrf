@@ -80,7 +80,7 @@ std::vector<vrf_protocol::VrfClimate *> VrfGatewayWrapper::get_climates() {
 }
 
 void UartVrfComponent::setup() {
-    ESP_LOGD(TAG, "setup");
+ //   ESP_LOGD(TAG, "setup");
 
     vrf_protocol::VrfGateway* demryGateway = new vrf_protocol::VrfDemryGateway(1);
     vrf_protocol::VrfGateway* zhonghongGateway = new vrf_protocol::VrfZhonghongGateway(1);
@@ -220,7 +220,7 @@ void UartVrfComponent::fire_cmd() {
 
     std::vector<uint8_t> cmd_val = this->pending_cmds_[0];
     this->pending_cmds_.erase(this->pending_cmds_.begin(), this->pending_cmds_.begin() + 1);
-    ESP_LOGD(TAG, "uart send %s", format_hex_pretty(cmd_val).c_str());
+  //  ESP_LOGD(TAG, "uart send %s", format_hex_pretty(cmd_val).c_str());
     write_array(cmd_val.data(), cmd_val.size());
 }
 
