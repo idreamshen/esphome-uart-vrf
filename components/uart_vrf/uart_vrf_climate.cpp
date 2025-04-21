@@ -1,5 +1,6 @@
 #include "esphome/core/application.h"
 #include "uart_vrf_climate.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
 namespace uart_vrf {
@@ -7,7 +8,7 @@ namespace uart_vrf {
 static const char *const TAG = "uart_vrf.climate"; 
 
 void UartVrfClimate::setup() {
-   // ESP_LOGD(TAG, "UartVrfClimate::setup");
+    ESP_LOGD(TAG, "UartVrfClimate::setup");
 }
 
 void UartVrfClimate::dump_config() {
