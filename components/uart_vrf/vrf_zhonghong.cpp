@@ -1,5 +1,5 @@
 #include <bitset>
-#include "esphome/core/log.h"
+//#include "esphome/core/log.h"
 #include "esphome.h"
 #include "esphome/core/hal.h"
 #include "vrf_zhonghong.h"
@@ -76,7 +76,7 @@ namespace vrf_protocol {
             if (current_temperature != 0) {
                 target_climate->set_current_temperature(current_temperature);
             } else {
-                esphome::ESP_LOGW(TAG, "consume data of current_temperature is zero");
+               // esphome::ESP_LOGW(TAG, "consume data of current_temperature is zero");
             }
             target_climate->set_target_temperature(target_temperature);
             target_climate->fire_data_updated();
@@ -145,7 +145,7 @@ namespace vrf_protocol {
                 }
             }
 
-            esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), length).c_str());
+           // esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), length).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + length);
         }
     }
