@@ -48,4 +48,4 @@ climate:
 - example/esp32wroom32d.yaml: 可用于德姆瑞 vrf 上板的 ESP32-WROOM-32D 芯片
 
 * 改装成品
-如果希望直接使用成品改装套件，可在闲鱼搜索“VRF 改装”，也可访问 https://p.goofish.com/p/J08WFFKk 进行购买
+如果希望直接使用成品改装套件，可在闲鱼搜索“VRF 改装”，也可访问 https://www.goofish.com/item?id=729302656019&categoryId=126856454 进行购买
