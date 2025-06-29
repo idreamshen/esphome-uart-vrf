@@ -104,7 +104,7 @@ namespace vrf_protocol {
             }
 
             // erase 10 bytes
-            esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
+            ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + 10);
         }
     }
