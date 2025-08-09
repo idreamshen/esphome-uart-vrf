@@ -5,7 +5,7 @@
 
 namespace vrf_protocol {
 
-    static const char *const TAG = "vrf_protocol.demry"; 
+    static const char *const TAG = "vrf_protocol.demry";
 
     void VrfDemryGateway::consume_data_handle_found_climates() {
         uint8_t tmp[4] = {this->data_[5], this->data_[6], this->data_[7], this->data_[8]};
@@ -51,7 +51,7 @@ namespace vrf_protocol {
                 break;
             }
         }
-        
+
         target_climate->set_target_temperature(climate_target_temperature);
         target_climate->set_current_temperature(climate_current_temperature);
 
@@ -62,13 +62,13 @@ namespace vrf_protocol {
             break;
         case VrfDemryClimateFanSpeed::DEMRY_CLIMATE_FAN_SPEED_HIGH:
             target_climate->set_fan_mode(VrfClimateFanMode::CLIMATE_FAN_MODE_HIGH);
-            break;   
+            break;
         case VrfDemryClimateFanSpeed::DEMRY_CLIMATE_FAN_SPEED_MEDIUM:
             target_climate->set_fan_mode(VrfClimateFanMode::CLIMATE_FAN_MODE_MEDIUM);
-            break; 
+            break;
         case VrfDemryClimateFanSpeed::DEMRY_CLIMATE_FAN_SPEED_LOW:
             target_climate->set_fan_mode(VrfClimateFanMode::CLIMATE_FAN_MODE_LOW);
-            break; 
+            break;
         default:
             break;
         }
@@ -83,7 +83,7 @@ namespace vrf_protocol {
             if (this->data_.size() < 10) {
                 return;
             }
-        
+
             uint8_t sum = checksum(std::vector<uint8_t>(this->data_.begin(), this->data_.begin() + 9));
             if (sum != this->data_[9]) {
                 // checksum failed
@@ -104,15 +104,15 @@ namespace vrf_protocol {
             }
 
             // erase 10 bytes
-            ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
+            esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), 10).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + 10);
         }
     }
 
     VrfCmd VrfDemryGateway::cmd_find_climates() {
-        std::vector<uint8_t> cmd = { 
-            this->slave_addr_, 0xAA, 0xFF, 0xFF, 
-            0xFF, 0xFF, 0xFF, 0xFF, 
+        std::vector<uint8_t> cmd = {
+            this->slave_addr_, 0xAA, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF,
             0xFF };
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
@@ -192,13 +192,13 @@ namespace vrf_protocol {
         this->need_fire_data_updated = true;
 
         std::vector<uint8_t> cmd = {
-            this->slave_addr_, 
-            this->id_, 
+            this->slave_addr_,
+            this->id_,
             uint8_t(convert_vrf_mode_to_demry_switch(mode)), // 开关
             uint8_t(convert_vrf_mode_to_demry_mode(mode)), // 模式
             this->target_temperature_, // 目标温度
             uint8_t(convert_vrf_fan_mode_to_demry_fan_speed(this->fan_mode_)), // 风速
-            0xFF, 
+            0xFF,
             0xFF,
             0xFF};
         uint8_t sum = checksum(cmd);
@@ -210,13 +210,13 @@ namespace vrf_protocol {
         this->need_fire_data_updated = true;
 
         std::vector<uint8_t> cmd = {
-            this->slave_addr_, 
-            this->id_, 
+            this->slave_addr_,
+            this->id_,
             uint8_t(convert_vrf_mode_to_demry_switch(this->mode_)), // 开关
             uint8_t(convert_vrf_mode_to_demry_mode(this->mode_)), // 模式
             target_temperature, // 目标温度
             uint8_t(convert_vrf_fan_mode_to_demry_fan_speed(this->fan_mode_)), // 风速
-            0xFF, 
+            0xFF,
             0xFF,
             0xFF};
         uint8_t sum = checksum(cmd);
@@ -228,13 +228,13 @@ namespace vrf_protocol {
         this->need_fire_data_updated = true;
 
         std::vector<uint8_t> cmd = {
-            this->slave_addr_, 
-            this->id_, 
+            this->slave_addr_,
+            this->id_,
             uint8_t(convert_vrf_mode_to_demry_switch(this->mode_)), // 开关
             uint8_t(convert_vrf_mode_to_demry_mode(this->mode_)), // 模式
             this->target_temperature_, // 目标温度
             uint8_t(convert_vrf_fan_mode_to_demry_fan_speed(mode)), // 风速
-            0xFF, 
+            0xFF,
             0xFF,
             0xFF};
         uint8_t sum = checksum(cmd);
@@ -242,4 +242,3 @@ namespace vrf_protocol {
         return VrfCmd(cmd);
     }
 }
-
