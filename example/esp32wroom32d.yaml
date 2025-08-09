@@ -1,6 +1,6 @@
 esphome:
-  name: uart-vrf-esp32wroom32d
-  friendly_name: uart-vrf-esp32wroom32d
+  name: vrf-32wroom32d
+  friendly_name: vrf-32wroom32d
   name_add_mac_suffix: true
 
 esp32:
