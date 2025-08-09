@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        config_name: [esp01s, esp32wroom32d]
+        config_name: [esp01s, esp32wroom32d, esp01s_nopass, esp01s_odd_nopass]
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
