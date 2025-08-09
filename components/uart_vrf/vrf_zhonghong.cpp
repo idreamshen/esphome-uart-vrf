@@ -6,7 +6,7 @@
 
 namespace vrf_protocol {
 
-    static const char *const TAG = "vrf_protocol.zhonghong"; 
+    static const char *const TAG = "vrf_protocol.zhonghong";
 
     void VrfZhonghongGateway::consume_data_handle_found_climates() {
         uint8_t num = this->data_[3]; // 空调数量
@@ -76,7 +76,7 @@ namespace vrf_protocol {
             if (current_temperature != 0) {
                 target_climate->set_current_temperature(current_temperature);
             } else {
-                ESP_LOGW(TAG, "consume data of current_temperature is zero");
+                esphome::ESP_LOGW(TAG, "consume data of current_temperature is zero");
             }
             target_climate->set_target_temperature(target_temperature);
             target_climate->fire_data_updated();
@@ -145,18 +145,18 @@ namespace vrf_protocol {
                 }
             }
 
-            ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), length).c_str());
+            esphome::ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), length).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + length);
         }
     }
 
     VrfCmd VrfZhonghongGateway::cmd_find_climates() {
-        std::vector<uint8_t> cmd = { 
-            this->slave_addr_, 
-            uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY), 
-            0x02, 
-            0xFF, 
-            0xFF, 
+        std::vector<uint8_t> cmd = {
+            this->slave_addr_,
+            uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY),
+            0x02,
+            0xFF,
+            0xFF,
             0xFF};
         uint8_t sum = checksum(cmd);
         cmd.push_back(sum);
@@ -167,7 +167,7 @@ namespace vrf_protocol {
         VrfZhonghongClimate* target_climate = nullptr;
         for(auto &climate : this->climates_) {
             VrfZhonghongClimate* climate_cast = reinterpret_cast<VrfZhonghongClimate*>(climate);
-            if (climate_cast->get_outdoor_addr() == outdoor_addr 
+            if (climate_cast->get_outdoor_addr() == outdoor_addr
                 && climate_cast->get_indoor_addr() == indoor_addr) {
                 target_climate = climate_cast;
                 break;
@@ -195,9 +195,9 @@ namespace vrf_protocol {
         }
 
         std::vector<uint8_t> cmd = {
-            this->slave_addr_, 
-            uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY), 
-            0x01, 
+            this->slave_addr_,
+            uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY),
+            0x01,
             0x01,
             this->outdoor_addr_,
             this->indoor_addr_};
@@ -296,7 +296,7 @@ namespace vrf_protocol {
         }
         if (temperature > 30) {
             temperature = 30;
-        } 
+        }
 
         std::vector<uint8_t> cmd = {
             this->slave_addr_,
@@ -317,7 +317,7 @@ namespace vrf_protocol {
 
     VrfCmd VrfZhonghongClimate::cmd_control_fan_mode(VrfClimateFanMode mode) {
         this->need_fire_data_updated = true;
-        
+
         std::vector<uint8_t> cmd = {
             this->slave_addr_,
             uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_FAN_MODE), // 功能码
@@ -352,4 +352,3 @@ namespace vrf_protocol {
         return VrfCmd(cmd);
     }
 }
-
