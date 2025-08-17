@@ -46,6 +46,8 @@ debug:
 switch:
   - platform: factory_reset
     name: Reset
+  - platform: restart
+    name: "Reboot"
 
 text_sensor:
   - platform: debug
