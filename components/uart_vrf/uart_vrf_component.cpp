@@ -343,6 +343,21 @@ void UartVrfComponent::query_next_climate() {
     }
 }
 
+bool UartVrfComponent::is_summer() {
+    if (this->time_id_ == nullptr) {
+        return false;
+    }
+    
+    auto time = this->time_id_->now();
+    if (!time.is_valid()) {
+        return false;
+    }
+    
+    uint8_t month = time.month;
+    // 北半球夏天为6月、7月、8月
+    return (month >= 6 && month <= 8);
+}
+
 
 } // namespace uart_vrf
 } // namespace esphome

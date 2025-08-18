@@ -4,6 +4,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/uart/uart.h"
+#include "esphome/components/time/real_time_clock.h"
 
 namespace vrf_protocol { // Forward declaration
   class VrfCmd;
@@ -60,6 +61,9 @@ public:
   void on_climate_create_callback(vrf_protocol::VrfClimate* climate);
   void on_climate_state_callback(vrf_protocol::VrfClimate* climate);
   void save_climate_state();
+  bool is_summer();
+
+  void set_time_id(time::RealTimeClock *time_id) { this->time_id_ = time_id; }
 
 protected:
   uart::UARTComponent* uart_;
@@ -71,6 +75,7 @@ protected:
   ESPPreferenceObject rtc_;
   bool climates_saved_{false};
   bool need_reboot_after_climates_saved_{false};
+  time::RealTimeClock *time_id_{nullptr};
 
   void fire_cmd();
   void find_climates();
