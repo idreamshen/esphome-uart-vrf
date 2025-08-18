@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <functional>
@@ -58,14 +59,16 @@ class VrfClimate {
     void add_on_state_callback(std::function<void(VrfClimate *)> &&callback) { this->on_state_callbacks_.push_back(callback); };
     std::string& get_unique_id() { return this->unique_id_; };
     std::string& get_name() { return this->name_; };
+    uint8_t get_outer_idx() { return this->outer_idx_; };
 
     virtual VrfCmd cmd_query() = 0;
     virtual VrfCmd cmd_control_mode(VrfClimateMode mode) = 0;
     virtual VrfCmd cmd_control_target_temperature(uint8_t target_temperature) = 0;
     virtual VrfCmd cmd_control_fan_mode(VrfClimateFanMode mode) = 0;
-    
+
     protected:
     uint8_t slave_addr_;
+    uint8_t outer_idx_;
     std::string unique_id_;
     std::string name_;
     VrfClimateMode mode_{VrfClimateMode::CLIMATE_MODE_OFF};

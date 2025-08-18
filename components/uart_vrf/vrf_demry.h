@@ -11,6 +11,7 @@ namespace vrf_protocol {
         public:
         VrfDemryClimate(uint8_t slave_addr, uint8_t id) {
             this->slave_addr_ = slave_addr;
+            this->outer_idx_ = id;
             this->id_ = id;
             this->unique_id_ = esphome::str_sprintf("%d_%d", this->slave_addr_, this->id_);
             this->name_ = esphome::str_sprintf("vrf_climate_%s", this->unique_id_.c_str());

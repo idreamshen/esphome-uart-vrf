@@ -16,18 +16,16 @@ static const uint32_t UART_VRF_CLIMATE_STORE_STATE_VERSION = 0x324BB78EUL;
 
 #define MAX_VRF_CLIMATES 32
 
-struct UartVrfClimateStoreState {
-  bool initialized;
-  uint8_t count;
-
-  struct {
-    std::string unique_id;
-    std::string name;
-  } climates[MAX_VRF_CLIMATES];
-};
 
 namespace esphome {
 namespace uart_vrf {
+
+struct UartVrfClimateStoreState {
+  bool initialized;
+  uint8_t count;
+  uint32_t outer_idx_bit;
+} __attribute__((packed));
+
 
 class UartVrfClimate;
 
@@ -71,7 +69,8 @@ protected:
   unsigned long last_time_heartbeat_cmds_{0};
   unsigned long last_time_fire_cmd{0};
   ESPPreferenceObject rtc_;
-  bool climates_initialized_{false};
+  bool climates_saved_{false};
+  bool need_reboot_after_climates_saved_{false};
 
   void fire_cmd();
   void find_climates();
