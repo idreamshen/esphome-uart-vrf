@@ -16,6 +16,7 @@ uart:
     parity: ODD
 
 uart_vrf:
+  allow_heat_mode_sensor: allow_heat_mode_sensor
 
 climate:
 
@@ -40,27 +41,23 @@ web_server:
   port: 80
   local: true
 
-debug:
-  update_interval: 60s
-
 switch:
+  - platform: restart
+    name: "重启设备 Reboot"
+    id: switch_reboot
   - platform: factory_reset
-    name: Reset
+    name: "恢复出厂配置 Reset"
+    id: switch_reset
+  - platform: template
+    name: "允许制热模式 Allow Heat"
+    id: allow_heat_mode_control
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
 
-text_sensor:
-  - platform: debug
-    device:
-      name: "Device Info"
-    reset_reason:
-      name: "Reset Reason"
-
-sensor:
-  - platform: debug
-    free:
-      name: "Heap Free"
-    fragmentation:
-      name: "Heap Fragmentation"
-    block:
-      name: "Heap Max Block"
-    loop_time:
-      name: "Loop Time"
+binary_sensor:
+  - platform: template
+    internal: True
+    name: "Allow Heat Mode Sensor"
+    id: allow_heat_mode_sensor
+    lambda: |-
+      return id(allow_heat_mode_control).state;

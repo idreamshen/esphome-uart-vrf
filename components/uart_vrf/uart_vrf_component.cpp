@@ -343,21 +343,15 @@ void UartVrfComponent::query_next_climate() {
     }
 }
 
-bool UartVrfComponent::is_summer() {
-    if (this->time_id_ == nullptr) {
-        return false;
+bool UartVrfComponent::is_heat_mode_allowed() {
+    // 如果配置了传感器，则从传感器获取状态
+    if (this->allow_heat_mode_sensor_ != nullptr &&
+        this->allow_heat_mode_sensor_->has_state()) {
+        return this->allow_heat_mode_sensor_->state;
     }
-    
-    auto time = this->time_id_->now();
-    if (!time.is_valid()) {
-        return false;
-    }
-    
-    uint8_t month = time.month;
-    // 北半球夏天为6月、7月、8月
-    return (month >= 6 && month <= 8);
-}
 
+    return true;
+}
 
 } // namespace uart_vrf
 } // namespace esphome
