@@ -29,6 +29,10 @@ jobs:
                 type: local\
                 path: /github/workspace/components' "$file"
         done
+    - name: Test
+      run: |
+        ls -lha
+        cat example/esp01s_nopass.yaml
     - name: Build
       id: esphome-build
       uses: esphome/build-action@v7.0.0
