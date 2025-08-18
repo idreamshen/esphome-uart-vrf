@@ -27,7 +27,7 @@ jobs:
           external_components:\
             - source:\
                 type: local\
-                path: /github/workspace/components/uart_vrf' "$file"
+                path: /github/workspace/components' "$file"
         done
     - name: Build
       id: esphome-build
