@@ -16,6 +16,15 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+    - name: Replace external_components with local path
+      run: |
+        for file in example/*.yaml; do
+          sed -i '/external_components:/,/url:/c\
+        external_components:\
+          - source:\
+              type: local\
+              path: /github/workspace/components' "$file"
+        done
     - name: Build
       id: esphome-build
       uses: esphome/build-action@v7.0.0
