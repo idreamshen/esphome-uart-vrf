@@ -23,7 +23,7 @@ jobs:
           external_components:\
             - source:\
                 type: local\
-                path: ./components/uart_vrf' "$file"
+                path: ../components/uart_vrf' "$file"
         done
     - name: Build
       id: esphome-build
