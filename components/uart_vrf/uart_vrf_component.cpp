@@ -79,8 +79,39 @@ std::vector<vrf_protocol::VrfClimate *> VrfGatewayWrapper::get_climates() {
     return this->vrf_gateway_->get_climates();
 }
 
+optional<UartVrfClimateStoreState> UartVrfComponent::restore_climate_state_() {
+    this->rtc_ = global_preferences->make_preference<UartVrfClimateStoreState>(this->get_object_id_hash() ^
+                                                                              UART_VRF_CLIMATE_STORE_STATE_VERSION);
+    UartVrfClimateStoreState recovered{};
+    if (!this->rtc_.load(&recovered))
+        return {};
+    return recovered;
+}
+
+void UartVrfComponent::save_climate_state() {
+    UartVrfClimateStoreState state{};
+    state.initialized = true;
+    state.count = this->climates_.size();
+    
+    for (int i = 0; i < this->climates_.size() && i < MAX_VRF_CLIMATES; i++) {
+        vrf_protocol::VrfClimate* core_climate = this->climates_[i]->get_core_climate();
+        state.climates[i].unique_id = core_climate->get_unique_id();
+        state.climates[i].name = core_climate->get_name();
+    }
+    
+    this->rtc_.save(&state);
+    ESP_LOGD(TAG, "Saved climate state with %d climates", state.count);
+}
+
 void UartVrfComponent::setup() {
     ESP_LOGD(TAG, "setup");
+
+    // Try to restore climate state
+    optional<UartVrfClimateStoreState> restored_state = this->restore_climate_state_();
+    if (restored_state.has_value() && restored_state->initialized) {
+        this->climates_initialized_ = true;
+        ESP_LOGD(TAG, "Restored climate state with %d climates", restored_state->count);
+    }
 
     vrf_protocol::VrfGateway* demryGateway = new vrf_protocol::VrfDemryGateway(1);
     vrf_protocol::VrfGateway* zhonghongGateway = new vrf_protocol::VrfZhonghongGateway(1);
@@ -100,6 +131,24 @@ void UartVrfComponent::setup() {
     this->set_interval("fire_cmd", 300, [this] { this->fire_cmd(); });
     this->set_interval("find_climates", 5000, [this] { this->find_climates(); });
     this->set_interval("query_next_climate", 1000, [this] { this->query_next_climate(); });
+    
+    // Add interval to periodically check if all climates are found and save state
+    this->set_interval("check_climates_initialized", 10000, [this] {
+        if (!this->climates_initialized_ && this->climates_.size() > 0) {
+            // Check if we have found all climates (no new climates found in the last interval)
+            static uint8_t last_climate_count = 0;
+            static unsigned long last_change_time = 0;
+            
+            if (last_climate_count != this->climates_.size()) {
+                last_climate_count = this->climates_.size();
+                last_change_time = millis();
+            } else if (millis() - last_change_time > 30000) {  // 30 seconds no change
+                this->climates_initialized_ = true;
+                this->save_climate_state();
+                ESP_LOGD(TAG, "All climates initialized and saved");
+            }
+        }
+    });
 }
 
 void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* climate) {
@@ -114,6 +163,19 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
     App.register_component(uart_climate);
     App.register_climate(uart_climate);
     this->climates_.push_back(uart_climate);
+    
+    // If we have restored state, try to restore climate settings
+    optional<UartVrfClimateStoreState> restored_state = this->restore_climate_state_();
+    if (restored_state.has_value() && restored_state->initialized) {
+        // Restore state for each climate
+        for (int i = 0; i < restored_state->count && i < MAX_VRF_CLIMATES; i++) {
+            if (climate->get_unique_id() == restored_state->climates[i].unique_id) {
+                ESP_LOGD(TAG, "Restoring state for climate %s", climate->get_name().c_str());
+                // Here we could restore individual climate settings if we stored them
+                break;
+            }
+        }
+    }
 }
 
 void UartVrfComponent::on_climate_state_callback(vrf_protocol::VrfClimate* vrf_climate) {

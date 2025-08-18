@@ -2,6 +2,7 @@
 
 #include "esphome.h"
 #include "esphome/core/component.h"
+#include "esphome/core/preferences.h"
 #include "esphome/components/uart/uart.h"
 
 namespace vrf_protocol { // Forward declaration
@@ -9,6 +10,21 @@ namespace vrf_protocol { // Forward declaration
   class VrfGateway; 
 }
 #include "vrf.h"
+
+// Random 32bit value; If this changes existing restore preferences are invalidated
+static const uint32_t UART_VRF_CLIMATE_STORE_STATE_VERSION = 0x848EA6ADUL;
+
+#define MAX_VRF_CLIMATES 16
+
+struct UartVrfClimateStoreState {
+  bool initialized;
+  uint8_t count;
+  
+  struct {
+    std::string unique_id;
+    std::string name;
+  } climates[MAX_VRF_CLIMATES];
+};
 
 namespace esphome {
 namespace uart_vrf {
@@ -45,6 +61,7 @@ public:
   uart::UARTComponent* get_uart() { return this->uart_; };
   void on_climate_create_callback(vrf_protocol::VrfClimate* climate);
   void on_climate_state_callback(vrf_protocol::VrfClimate* climate);
+  void save_climate_state();
 
 protected:
   uart::UARTComponent* uart_;
@@ -53,10 +70,13 @@ protected:
   std::vector<std::vector<uint8_t>> pending_cmds_;
   unsigned long last_time_heartbeat_cmds_{0};
   unsigned long last_time_fire_cmd{0};
+  ESPPreferenceObject rtc_;
+  bool climates_initialized_{false};
 
   void fire_cmd();
   void find_climates();
   void query_next_climate();
+  optional<UartVrfClimateStoreState> restore_climate_state_();
   
 };
 
