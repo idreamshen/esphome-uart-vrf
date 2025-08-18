@@ -24,10 +24,10 @@ jobs:
       run: |
         for file in example/*.yaml; do
           sed -i '/external_components:/,/url:/c\
-          external_components:\
-            - source:\
-                type: local\
-                path: /github/workspace/components' "$file"
+        external_components:\
+          - source:\
+              type: local\
+              path: /github/workspace/components' "$file"
         done
     - name: Test
       run: |
