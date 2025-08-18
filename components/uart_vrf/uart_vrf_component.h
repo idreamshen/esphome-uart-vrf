@@ -7,19 +7,19 @@
 
 namespace vrf_protocol { // Forward declaration
   class VrfCmd;
-  class VrfGateway; 
+  class VrfGateway;
 }
 #include "vrf.h"
 
 // Random 32bit value; If this changes existing restore preferences are invalidated
-static const uint32_t UART_VRF_CLIMATE_STORE_STATE_VERSION = 0x848EA6ADUL;
+static const uint32_t UART_VRF_CLIMATE_STORE_STATE_VERSION = 0x324BB78EUL;
 
-#define MAX_VRF_CLIMATES 16
+#define MAX_VRF_CLIMATES 32
 
 struct UartVrfClimateStoreState {
   bool initialized;
   uint8_t count;
-  
+
   struct {
     std::string unique_id;
     std::string name;
@@ -29,7 +29,7 @@ struct UartVrfClimateStoreState {
 namespace esphome {
 namespace uart_vrf {
 
-class UartVrfClimate; 
+class UartVrfClimate;
 
 class VrfGatewayWrapper {
 
@@ -77,7 +77,8 @@ protected:
   void find_climates();
   void query_next_climate();
   optional<UartVrfClimateStoreState> restore_climate_state_();
-  
+  void initialize_climates_from_restore(const UartVrfClimateStoreState& state);
+
 };
 
 }

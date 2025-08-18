@@ -88,6 +88,19 @@ optional<UartVrfClimateStoreState> UartVrfComponent::restore_climate_state_() {
     return recovered;
 }
 
+void UartVrfComponent::initialize_climates_from_restore(const UartVrfClimateStoreState& state) {
+    // Create dummy VrfClimate objects based on restored state
+    // Note: We can't fully initialize the VrfClimate objects here because we don't have the protocol-specific data
+    // This is just to create the UartVrfClimate objects so they are available immediately
+    for (int i = 0; i < state.count && i < MAX_VRF_CLIMATES; i++) {
+        // We can't create real VrfClimate objects here because we don't have the protocol data yet
+        // Instead, we'll let the normal discovery process find the real devices
+        // But we can at least log what we expect to find
+        ESP_LOGD(TAG, "Expecting to find climate: %s (unique_id: %s)", 
+                 state.climates[i].name.c_str(), state.climates[i].unique_id.c_str());
+    }
+}
+
 void UartVrfComponent::save_climate_state() {
     UartVrfClimateStoreState state{};
     state.initialized = true;
@@ -111,6 +124,8 @@ void UartVrfComponent::setup() {
     if (restored_state.has_value() && restored_state->initialized) {
         this->climates_initialized_ = true;
         ESP_LOGD(TAG, "Restored climate state with %d climates", restored_state->count);
+        // Initialize climates from restore state
+        this->initialize_climates_from_restore(*restored_state);
     }
 
     vrf_protocol::VrfGateway* demryGateway = new vrf_protocol::VrfDemryGateway(1);
