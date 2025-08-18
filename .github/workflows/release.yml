@@ -32,6 +32,17 @@ jobs:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
         version: 2025.6.3
         platform: linux/amd64
+    - name: Rename bin files
+      run: |
+        cd ${{ steps.esphome-build.outputs.name }}
+        for file in *.bin; do
+          if [[ $file == *"factory"* ]]; then
+            mv "$file" "${{ matrix.config_name }}.factory.bin"
+          elif [[ $file == *"ota"* ]]; then
+            mv "$file" "${{ matrix.config_name }}.ota.bin"
+          fi
+        done
+        ls -lha
     - name: Upload file to release
       uses: svenstaro/upload-release-action@v2
       with:
