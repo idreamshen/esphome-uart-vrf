@@ -17,7 +17,9 @@ jobs:
       with:
         submodules: 'recursive'
     - name: Test
-      run: ls -lha
+      run: |
+        ls -lha
+        cat example/esp01s_nopass.yaml
     - name: Replace external_components with local path
       run: |
         for file in example/*.yaml; do
