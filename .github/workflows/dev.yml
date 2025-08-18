@@ -16,18 +16,38 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+    - name: Replace external_components with local path
+      run: |
+        for file in example/*.yaml; do
+          sed -i '/external_components:/,/url:/c\
+        external_components:\
+          - source:\
+              type: local\
+              path: /github/workspace/components' "$file"
+        done
     - name: Build
       id: esphome-build
       uses: esphome/build-action@v7.0.0
       with:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
-        version: 2024.11.3
+        version: 2025.6.3
         platform: linux/amd64
+    - name: Rename bin files
+      run: |
+        cd ${{ steps.esphome-build.outputs.name }}
+        for file in *.bin; do
+          if [[ $file == *"factory"* ]]; then
+            mv "$file" "${{ matrix.config_name }}.factory.bin"
+          elif [[ $file == *"ota"* ]]; then
+            mv "$file" "${{ matrix.config_name }}.ota.bin"
+          fi
+        done
+        ls -lha
     - name: Upload bin
       uses: actions/upload-artifact@v4.4.3
       with:
         # Artifact name
-        name: "${{ steps.esphome-build.outputs.name }}-bin"
+        name: "${{ matrix.config_name }}-bin"
         # A file, directory or wildcard pattern that describes what to upload
         path: ${{ steps.esphome-build.outputs.name }}/*.bin
         # The desired behavior if no files are found using the provided path.

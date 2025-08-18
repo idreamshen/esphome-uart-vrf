@@ -1,4 +1,5 @@
 #include <bitset>
+#include <cstring>
 
 #include "vrf_zhonghong.h"
 #include "vrf_demry.h"
@@ -8,10 +9,10 @@
 namespace esphome {
 namespace uart_vrf {
 
-static const char *const TAG = "uart_vrf"; 
+static const char *const TAG = "uart_vrf";
 
-void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway) { 
-    this->gateways_.push_back(gateway); 
+void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway) {
+    this->gateways_.push_back(gateway);
 }
 
 void VrfGatewayWrapper::consume_data(uint8_t data) {
@@ -79,8 +80,76 @@ std::vector<vrf_protocol::VrfClimate *> VrfGatewayWrapper::get_climates() {
     return this->vrf_gateway_->get_climates();
 }
 
+optional<UartVrfClimateStoreState> UartVrfComponent::restore_climate_state_() {
+  this->rtc_ = global_preferences->make_preference<UartVrfClimateStoreState>(UART_VRF_CLIMATE_STORE_STATE_VERSION, true);
+    UartVrfClimateStoreState recovered{};
+    if (!this->rtc_.load(&recovered))
+        return {};
+    return recovered;
+}
+
+void UartVrfComponent::initialize_climates_from_restore(const UartVrfClimateStoreState& state) {
+    // Use bitset to iterate through the outer_idx_bit to find which bits are set
+    std::bitset<32> outer_idx_bits(state.outer_idx_bit);
+
+    for (size_t i = 0; i < outer_idx_bits.size() && i < MAX_VRF_CLIMATES; i++) {
+        if (outer_idx_bits[i]) {
+            // Create a climate entity for each bit that is set
+            auto *uart_climate = new UartVrfClimate(NULL);
+            uart_climate->set_parent(this);
+
+            // Create names based on the outer index
+            std::string name = "vrf_climate_1_" + std::to_string(i);
+            std::string object_id = "1_" + std::to_string(i);
+
+            uart_climate->set_name(strdup(name.c_str()));
+            uart_climate->set_object_id(strdup(object_id.c_str()));
+
+            App.register_component(uart_climate);
+            App.register_climate(uart_climate);
+            this->climates_.push_back(uart_climate);
+        }
+    }
+}
+
+void UartVrfComponent::save_climate_state() {
+    UartVrfClimateStoreState state{};
+    memset(&state, 0, sizeof(UartVrfClimateStoreState));
+    state.initialized = true;
+    state.count = this->climates_.size();
+
+    // Set the outer_idx_bit based on the outer indices of the climates
+    for (int i = 0; i < this->climates_.size() && i < MAX_VRF_CLIMATES; i++) {
+        vrf_protocol::VrfClimate* core_climate = this->climates_[i]->get_core_climate();
+        if (!core_climate) {
+          ESP_LOGW(TAG, "core_climate is NULL, i=%d", i);
+          continue;
+        }
+
+        uint8_t outer_idx = core_climate->get_outer_idx();
+        if (outer_idx < 32) {
+            state.outer_idx_bit |= (1UL << outer_idx);
+        }
+    }
+
+    this->rtc_.save(&state);
+    ESP_LOGD(TAG, "Saved climate state with %d climates", state.count);
+}
+
 void UartVrfComponent::setup() {
     ESP_LOGD(TAG, "setup");
+
+    // Try to restore climate state
+    optional<UartVrfClimateStoreState> restored_state = this->restore_climate_state_();
+    if (restored_state.has_value() && restored_state->initialized) {
+        ESP_LOGD(TAG, "Restored climate state with %d climates", restored_state->count);
+        // Initialize climates from restore state
+        this->initialize_climates_from_restore(*restored_state);
+    }
+
+    if (this->climates_.size() == 0) {
+      this->need_reboot_after_climates_saved_ = true;
+    }
 
     vrf_protocol::VrfGateway* demryGateway = new vrf_protocol::VrfDemryGateway(1);
     vrf_protocol::VrfGateway* zhonghongGateway = new vrf_protocol::VrfZhonghongGateway(1);
@@ -100,6 +169,35 @@ void UartVrfComponent::setup() {
     this->set_interval("fire_cmd", 300, [this] { this->fire_cmd(); });
     this->set_interval("find_climates", 5000, [this] { this->find_climates(); });
     this->set_interval("query_next_climate", 1000, [this] { this->query_next_climate(); });
+
+    // Add interval to periodically check if all climates are found and save state
+    this->set_interval("check_climates_initialized", 10000, [this] {
+        if (!this->climates_saved_ && this->climates_.size() > 0) {
+          bool climate_all_ready = true;
+
+          for (auto& climate : this->climates_) {
+            if (!climate->get_core_climate()) {
+              climate_all_ready = false;
+              break;
+            }
+          }
+
+          if (!climate_all_ready) {
+            ESP_LOGD(TAG, "Not all climates ready");
+            return;
+          }
+
+          this->climates_saved_ = true;
+          this->save_climate_state();
+          ESP_LOGD(TAG, "All climates initialized and saved");
+
+          if (this->need_reboot_after_climates_saved_) {
+            ESP_LOGI(TAG, "Restarting device to resetup climates...");
+            delay(100);
+            App.safe_reboot();
+          }
+        }
+    });
 }
 
 void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* climate) {
@@ -107,13 +205,27 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
         this->on_climate_state_callback(climate);
     });
 
-    auto *uart_climate = new UartVrfClimate(climate);
-    uart_climate->set_parent(this);
-    uart_climate->set_name(climate->get_name().c_str());
-    uart_climate->set_object_id(climate->get_name().c_str());
-    App.register_component(uart_climate);
-    App.register_climate(uart_climate);
-    this->climates_.push_back(uart_climate);
+    bool found = false;
+    for (auto& _climate : this->climates_) {
+        if (_climate->get_core_climate() == climate) {
+          found = true;
+          break;
+        } else if (strcmp(_climate->get_object_id().c_str(), climate->get_unique_id().c_str()) == 0) {
+          _climate->core_climate_ = climate;
+          found = true;
+          break;
+        }
+    }
+
+    if (!found) {
+      auto *uart_climate = new UartVrfClimate(climate);
+      uart_climate->set_parent(this);
+      uart_climate->set_name(climate->get_name().c_str());
+      uart_climate->set_object_id(climate->get_name().c_str());
+      App.register_component(uart_climate);
+      App.register_climate(uart_climate);
+      this->climates_.push_back(uart_climate);
+    }
 }
 
 void UartVrfComponent::on_climate_state_callback(vrf_protocol::VrfClimate* vrf_climate) {
@@ -231,6 +343,6 @@ void UartVrfComponent::query_next_climate() {
     }
 }
 
-  
+
 } // namespace uart_vrf
 } // namespace esphome

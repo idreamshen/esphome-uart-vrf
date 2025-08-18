@@ -11,9 +11,10 @@ namespace vrf_protocol {
         public:
         VrfZhonghongClimate(uint8_t slave_addr, uint8_t outdoor_addr, uint8_t indoor_addr) {
             this->slave_addr_ = slave_addr;
+            this->outer_idx_ = indoor_addr;
             this->outdoor_addr_ = outdoor_addr;
             this->indoor_addr_ = indoor_addr;
-            this->unique_id_ = esphome::str_sprintf("%d_%d_%d", 
+            this->unique_id_ = esphome::str_sprintf("%d_%d_%d",
             this->slave_addr_, this->outdoor_addr_, this->indoor_addr_);
             this->name_ = esphome::str_sprintf("vrf_climate_%s", this->unique_id_.c_str());
         };

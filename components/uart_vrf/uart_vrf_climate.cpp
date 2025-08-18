@@ -8,6 +8,13 @@ static const char *const TAG = "uart_vrf.climate";
 
 void UartVrfClimate::setup() {
     ESP_LOGD(TAG, "UartVrfClimate::setup");
+    
+    // Try to restore state
+    auto restored = this->restore_state_();
+    if (restored.has_value()) {
+        ESP_LOGD(TAG, "Restored state for climate %s", this->get_name().c_str());
+        restored->apply(this);
+    }
 }
 
 void UartVrfClimate::dump_config() {

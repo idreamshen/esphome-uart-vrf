@@ -19,8 +19,6 @@ class UartVrfClimate : public Component, public climate::Climate, public Parente
     void control(const climate::ClimateCall &call) override;
     climate::ClimateTraits traits() override;
     vrf_protocol::VrfClimate* get_core_climate() { return this->core_climate_; };
-
-    protected:
     vrf_protocol::VrfClimate* core_climate_;
 
     private:
