@@ -16,6 +16,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+    - name: Test
+      run: ls -lha
     - name: Replace external_components with local path
       run: |
         for file in example/*.yaml; do
@@ -23,7 +25,7 @@ jobs:
           external_components:\
             - source:\
                 type: local\
-                path: ../components/uart_vrf' "$file"
+                path: /github/workspace/components/uart_vrf' "$file"
         done
     - name: Build
       id: esphome-build
