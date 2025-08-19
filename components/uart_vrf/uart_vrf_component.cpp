@@ -343,6 +343,15 @@ void UartVrfComponent::query_next_climate() {
     }
 }
 
+bool UartVrfComponent::is_heat_mode_allowed() {
+    // 如果配置了传感器，则从传感器获取状态
+    if (this->allow_heat_mode_sensor_ != nullptr &&
+        this->allow_heat_mode_sensor_->has_state()) {
+        return this->allow_heat_mode_sensor_->state;
+    }
+
+    return true;
+}
 
 } // namespace uart_vrf
 } // namespace esphome

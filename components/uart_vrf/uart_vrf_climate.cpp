@@ -4,11 +4,11 @@
 namespace esphome {
 namespace uart_vrf {
 
-static const char *const TAG = "uart_vrf.climate"; 
+static const char *const TAG = "uart_vrf.climate";
 
 void UartVrfClimate::setup() {
     ESP_LOGD(TAG, "UartVrfClimate::setup");
-    
+
     // Try to restore state
     auto restored = this->restore_state_();
     if (restored.has_value()) {
@@ -22,7 +22,15 @@ void UartVrfClimate::dump_config() {
 
 void UartVrfClimate::control(const climate::ClimateCall &call) {
     if (call.get_mode().has_value()) {
-        this->mode = *call.get_mode();
+        climate::ClimateMode target_mode = *call.get_mode();
+
+        // 如果不允许制热模式且用户选择了制热模式，则强制制冷
+        if (!this->get_parent()->is_heat_mode_allowed() &&
+            target_mode == climate::ClimateMode::CLIMATE_MODE_HEAT) {
+            target_mode = climate::ClimateMode::CLIMATE_MODE_COOL;
+        }
+
+        this->mode = target_mode;
 
         vrf_protocol::VrfCmd cmd;
         switch (this->mode) {
