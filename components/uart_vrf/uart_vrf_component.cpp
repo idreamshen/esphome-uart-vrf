@@ -1,5 +1,6 @@
 #include <bitset>
 #include <cstring>
+#include <string>
 
 #include "vrf_zhonghong.h"
 #include "vrf_demry.h"
@@ -210,18 +211,27 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
         if (_climate->get_core_climate() == climate) {
           found = true;
           break;
-        } else if (strcmp(_climate->get_object_id().c_str(), climate->get_unique_id().c_str()) == 0) {
-          _climate->core_climate_ = climate;
-          found = true;
-          break;
+        } else {
+          std::string _climate_object_id = _climate->get_object_id();
+          std::string climate_object_id = "1_" + std::to_string(climate->get_outer_idx());
+
+          if (strcmp(_climate_object_id.c_str(), climate_object_id.c_str()) == 0) {
+            _climate->core_climate_ = climate;
+            found = true;
+            break;
+          }
+
         }
     }
 
     if (!found) {
+      std::string name = "vrf_climate_1_" + std::to_string(climate->get_outer_idx());
+      std::string climate_object_id = "1_" + std::to_string(climate->get_outer_idx());
+
       auto *uart_climate = new UartVrfClimate(climate);
       uart_climate->set_parent(this);
-      uart_climate->set_name(climate->get_name().c_str());
-      uart_climate->set_object_id(climate->get_name().c_str());
+      uart_climate->set_name(strdup(name.c_str()));
+      uart_climate->set_object_id(strdup(climate_object_id.c_str()));
       App.register_component(uart_climate);
       App.register_climate(uart_climate);
       this->climates_.push_back(uart_climate);
