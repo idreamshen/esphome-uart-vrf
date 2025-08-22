@@ -17,6 +17,22 @@ uint8_t checksum(std::vector<uint8_t> cmd) {
     return sum;
 }
 
+uint16_t crc16(std::vector<uint8_t> cmd) {
+    uint16_t crc = 0xFFFF;
+    for (uint8_t byte : cmd) {
+        crc ^= byte;
+        for (int i = 0; i < 8; i++) {
+            if (crc & 0x0001) {
+                crc >>= 1;
+                crc ^= 0xA001; // Modbus CRC16 polynomial
+            } else {
+                crc >>= 1;
+            }
+        }
+    }
+    return crc;
+}
+
 void VrfClimate::set_mode(VrfClimateMode mode) { 
     if (this->mode_ != mode) {
         this->need_fire_data_updated=true;
