@@ -21,6 +21,11 @@ void UartVrfClimate::dump_config() {
 }
 
 void UartVrfClimate::control(const climate::ClimateCall &call) {
+    if (!this->core_climate_) {
+        ESP_LOGW(TAG, "core climate not found");
+        return;
+    }
+
     if (call.get_mode().has_value()) {
         climate::ClimateMode target_mode = *call.get_mode();
 
