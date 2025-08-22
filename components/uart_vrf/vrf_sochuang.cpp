@@ -114,7 +114,7 @@ namespace vrf_protocol {
                 this->consume_data_handle_query_climate();
             } else {
                 // Unknown command, just log and continue
-                ESP_LOGD(TAG, "Unknown command: 0x%02X", this->data_[4]);
+                ESP_LOGD(TAG, "Unknown command: 0x%02X", this->data_[3]);
             }
 
             // Erase 12 bytes
