@@ -4,6 +4,7 @@
 
 #include "vrf_zhonghong.h"
 #include "vrf_demry.h"
+#include "vrf_sochuang.h"
 #include "uart_vrf_component.h"
 #include "uart_vrf_climate.h"
 
@@ -154,6 +155,7 @@ void UartVrfComponent::setup() {
 
     vrf_protocol::VrfGateway* demryGateway = new vrf_protocol::VrfDemryGateway(1);
     vrf_protocol::VrfGateway* zhonghongGateway = new vrf_protocol::VrfZhonghongGateway(1);
+    vrf_protocol::VrfGateway* sochuangGateway = new vrf_protocol::VrfSochuangGateway(1);
 
     demryGateway->add_on_climate_create_callback([this](vrf_protocol::VrfClimate* climate) {
         this->on_climate_create_callback(climate);
@@ -163,9 +165,14 @@ void UartVrfComponent::setup() {
         this->on_climate_create_callback(climate);
     });
 
+    sochuangGateway->add_on_climate_create_callback([this](vrf_protocol::VrfClimate* climate) {
+        this->on_climate_create_callback(climate);
+    });
+
     this->vrf_gateway_wrapper_ = new VrfGatewayWrapper();
     this->vrf_gateway_wrapper_->add_gateway(demryGateway);
     this->vrf_gateway_wrapper_->add_gateway(zhonghongGateway);
+    this->vrf_gateway_wrapper_->add_gateway(sochuangGateway);
 
     this->set_interval("fire_cmd", 300, [this] { this->fire_cmd(); });
     this->set_interval("find_climates", 5000, [this] { this->find_climates(); });

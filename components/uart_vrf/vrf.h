@@ -10,6 +10,7 @@
 namespace vrf_protocol {
 
 uint8_t checksum(std::vector<uint8_t> cmd);
+uint16_t crc16(std::vector<uint8_t> cmd);
 
 class VrfCmd {
     public:
