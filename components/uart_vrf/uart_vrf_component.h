@@ -81,6 +81,7 @@ protected:
   void query_next_climate();
   optional<UartVrfClimateStoreState> restore_climate_state_();
   void initialize_climates_from_restore(const UartVrfClimateStoreState& state);
+  void register_uart_climate(vrf_protocol::VrfClimate* climate, uint8_t outer_idx);
 
 };
 

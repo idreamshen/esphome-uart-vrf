@@ -6,18 +6,12 @@ namespace uart_vrf {
 
 static const char *const TAG = "uart_vrf.climate";
 
-void UartVrfClimate::setup() {
-    ESP_LOGD(TAG, "UartVrfClimate::setup");
-
-    // Try to restore state
+void UartVrfClimate::apply_restored_state() {
     auto restored = this->restore_state_();
     if (restored.has_value()) {
         ESP_LOGD(TAG, "Restored state for climate %s", this->get_name().c_str());
         restored->apply(this);
     }
-}
-
-void UartVrfClimate::dump_config() {
 }
 
 void UartVrfClimate::control(const climate::ClimateCall &call) {
@@ -102,7 +96,7 @@ void UartVrfClimate::control(const climate::ClimateCall &call) {
 
 climate::ClimateTraits UartVrfClimate::traits() {
     auto traits = climate::ClimateTraits();
-    traits.set_supports_current_temperature(true);
+    traits.add_feature_flags(climate::CLIMATE_SUPPORTS_CURRENT_TEMPERATURE);
     traits.set_visual_target_temperature_step(1);
     traits.set_visual_temperature_step(1);
     traits.set_visual_min_temperature(16);

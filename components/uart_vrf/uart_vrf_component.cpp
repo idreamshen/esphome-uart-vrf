@@ -90,26 +90,24 @@ optional<UartVrfClimateStoreState> UartVrfComponent::restore_climate_state_() {
     return recovered;
 }
 
+void UartVrfComponent::register_uart_climate(vrf_protocol::VrfClimate* climate, uint8_t outer_idx) {
+    auto *uart_climate = new UartVrfClimate(climate, outer_idx);
+    uart_climate->set_parent(this);
+
+    // Name is also the object_id source. Keep "1_N" so HA entity_id stays climate.<device>_1_N.
+    const char *name = strdup(("1_" + std::to_string(outer_idx)).c_str());
+    App.register_climate(uart_climate, name, 0, 0);
+    uart_climate->apply_restored_state();
+    this->climates_.push_back(uart_climate);
+}
+
 void UartVrfComponent::initialize_climates_from_restore(const UartVrfClimateStoreState& state) {
     // Use bitset to iterate through the outer_idx_bit to find which bits are set
     std::bitset<32> outer_idx_bits(state.outer_idx_bit);
 
     for (size_t i = 0; i < outer_idx_bits.size() && i < MAX_VRF_CLIMATES; i++) {
         if (outer_idx_bits[i]) {
-            // Create a climate entity for each bit that is set
-            auto *uart_climate = new UartVrfClimate(NULL);
-            uart_climate->set_parent(this);
-
-            // Create names based on the outer index
-            std::string name = "vrf_climate_1_" + std::to_string(i);
-            std::string object_id = "1_" + std::to_string(i);
-
-            uart_climate->set_name(strdup(name.c_str()));
-            uart_climate->set_object_id(strdup(object_id.c_str()));
-
-            App.register_component(uart_climate);
-            App.register_climate(uart_climate);
-            this->climates_.push_back(uart_climate);
+            this->register_uart_climate(nullptr, static_cast<uint8_t>(i));
         }
     }
 }
@@ -218,30 +216,15 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
         if (_climate->get_core_climate() == climate) {
           found = true;
           break;
-        } else {
-          std::string _climate_object_id = _climate->get_object_id();
-          std::string climate_object_id = "1_" + std::to_string(climate->get_outer_idx());
-
-          if (strcmp(_climate_object_id.c_str(), climate_object_id.c_str()) == 0) {
-            _climate->core_climate_ = climate;
-            found = true;
-            break;
-          }
-
+        } else if (_climate->get_outer_idx() == climate->get_outer_idx()) {
+          _climate->core_climate_ = climate;
+          found = true;
+          break;
         }
     }
 
     if (!found) {
-      std::string name = "vrf_climate_1_" + std::to_string(climate->get_outer_idx());
-      std::string climate_object_id = "1_" + std::to_string(climate->get_outer_idx());
-
-      auto *uart_climate = new UartVrfClimate(climate);
-      uart_climate->set_parent(this);
-      uart_climate->set_name(strdup(name.c_str()));
-      uart_climate->set_object_id(strdup(climate_object_id.c_str()));
-      App.register_component(uart_climate);
-      App.register_climate(uart_climate);
-      this->climates_.push_back(uart_climate);
+      this->register_uart_climate(climate, climate->get_outer_idx());
     }
 }
 

@@ -2,6 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID
 from esphome.components import uart, binary_sensor
+from esphome.core import CORE
 
 
 DEPENDENCIES = ['uart']
@@ -23,6 +24,11 @@ CONFIG_SCHEMA = cv.Schema({
 def to_code(config):
     u = yield cg.get_variable(config["uart_id"])
     var = cg.new_Pvariable(config[CONF_ID], u)
+
+    # Indoor climates are created at runtime; reserve slots so ESPHome emits
+    # USE_CLIMATE and sizes App.climates_ (MAX_VRF_CLIMATES).
+    for _ in range(32):
+        CORE.register_platform_component("climate", None)
 
     # Add allow heat mode configuration
     if CONF_ALLOW_HEAT_MODE_SENSOR in config:

@@ -7,9 +7,8 @@ from .. import UartVrfComponent
 DEPENDENCIES = ['uart_vrf']
 
 uart_vrf_ns = cg.esphome_ns.namespace('uart_vrf')
-uartVrfClimate = uart_vrf_ns.class_('UartVrfClimate', 
-    climate.Climate, 
-    cg.Component, 
+uartVrfClimate = uart_vrf_ns.class_('UartVrfClimate',
+    climate.Climate,
     cg.Parented.template(UartVrfComponent),
 )
 

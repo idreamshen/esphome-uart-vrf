@@ -30,7 +30,7 @@ jobs:
       uses: esphome/build-action@v7.0.0
       with:
         yaml-file: "example/${{ matrix.config_name }}.yaml"
-        version: 2025.6.3
+        version: 2026.7.4
         platform: linux/amd64
     - name: Rename bin files
       run: |
