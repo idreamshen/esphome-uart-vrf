@@ -1,0 +1,6 @@
+esphome==2026.7.4
+aioesphomeapi==45.7.0
+pytest>=8.3,<9
+pytest-asyncio>=0.24,<2
+pytest-timeout>=2.3,<3
+Jinja2>=3.1,<4

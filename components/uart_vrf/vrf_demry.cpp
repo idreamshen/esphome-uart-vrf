@@ -93,9 +93,8 @@ namespace vrf_protocol {
             }
 
             if (this->data_[0] != this->slave_addr_) {
-                // not my data
-                this->data_.clear();
-                return;
+                this->data_.erase(this->data_.begin(), this->data_.begin() + 10);
+                continue;
             }
 
             if (this->data_[1] == 0xAA) {

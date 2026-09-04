@@ -7,6 +7,7 @@
 #include "vrf_sochuang.h"
 #include "uart_vrf_component.h"
 #include "uart_vrf_climate.h"
+#include "uart_vrf_timing.h"
 
 namespace esphome {
 namespace uart_vrf {
@@ -14,7 +15,22 @@ namespace uart_vrf {
 static const char *const TAG = "uart_vrf";
 
 void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway) {
+    this->add_gateway(gateway, "unknown");
+}
+
+void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway, const char* protocol_name) {
     this->gateways_.push_back(gateway);
+    this->gateway_protocol_names_.push_back(protocol_name != nullptr ? protocol_name : "unknown");
+}
+
+void VrfGatewayWrapper::on_uart_idle(uint32_t now) {
+    if (this->vrf_gateway_ != nullptr) {
+      this->vrf_gateway_->on_uart_idle(now);
+      return;
+    }
+    for (auto& gateway : this->gateways_) {
+      gateway->on_uart_idle(now);
+    }
 }
 
 void VrfGatewayWrapper::consume_data(uint8_t data) {
@@ -23,9 +39,11 @@ void VrfGatewayWrapper::consume_data(uint8_t data) {
       return;
     }
 
-    for (auto& gateway : this->gateways_) {
+    for (size_t i = 0; i < this->gateways_.size(); i++) {
+      auto* gateway = this->gateways_[i];
       if (gateway->get_climates().size() > 0) {
         this->vrf_gateway_ = gateway;
+        ESP_LOGI(TAG, "VRF protocol locked: %s", this->gateway_protocol_names_[i]);
         this->vrf_gateway_->consume_data(data);
         return;
       }
@@ -168,29 +186,46 @@ void UartVrfComponent::setup() {
     });
 
     this->vrf_gateway_wrapper_ = new VrfGatewayWrapper();
-    this->vrf_gateway_wrapper_->add_gateway(demryGateway);
-    this->vrf_gateway_wrapper_->add_gateway(zhonghongGateway);
-    this->vrf_gateway_wrapper_->add_gateway(sochuangGateway);
+    this->vrf_gateway_wrapper_->add_gateway(demryGateway, "Demry");
+    this->vrf_gateway_wrapper_->add_gateway(zhonghongGateway, "Zhonghong");
+    this->vrf_gateway_wrapper_->add_gateway(sochuangGateway, "Sochuang");
 
-    this->set_interval("fire_cmd", 300, [this] { this->fire_cmd(); });
-    this->set_interval("find_climates", 5000, [this] { this->find_climates(); });
-    this->set_interval("query_next_climate", 1000, [this] { this->query_next_climate(); });
+    this->set_interval(
+        "fire_cmd", timing::COMMAND_INTERVAL_MS, [this] { this->fire_cmd(); }
+    );
+    this->set_interval(
+        "find_climates",
+        timing::DISCOVERY_INTERVAL_MS,
+        [this] { this->find_climates(); }
+    );
+    this->set_interval(
+        "query_next_climate",
+        timing::QUERY_INTERVAL_MS,
+        [this] { this->query_next_climate(); }
+    );
 
-    // Add interval to periodically check if all climates are found and save state
-    this->set_interval("check_climates_initialized", 10000, [this] {
-        if (!this->climates_saved_ && this->climates_.size() > 0) {
-          bool climate_all_ready = true;
+    this->schedule_climate_initialization_check();
+}
+
+void UartVrfComponent::schedule_climate_initialization_check() {
+    this->set_timeout(
+        "check_climates_initialized",
+        timing::INITIALIZATION_CHECK_INTERVAL_MS,
+        [this] {
+          if (this->climates_saved_) {
+            return;
+          }
+          if (this->climates_.empty()) {
+            this->schedule_climate_initialization_check();
+            return;
+          }
 
           for (auto& climate : this->climates_) {
             if (!climate->get_core_climate()) {
-              climate_all_ready = false;
-              break;
+              ESP_LOGD(TAG, "Not all climates ready");
+              this->schedule_climate_initialization_check();
+              return;
             }
-          }
-
-          if (!climate_all_ready) {
-            ESP_LOGD(TAG, "Not all climates ready");
-            return;
           }
 
           this->climates_saved_ = true;
@@ -199,11 +234,11 @@ void UartVrfComponent::setup() {
 
           if (this->need_reboot_after_climates_saved_) {
             ESP_LOGI(TAG, "Restarting device to resetup climates...");
-            delay(100);
+            delay(timing::REBOOT_DELAY_MS);
             App.safe_reboot();
           }
         }
-    });
+    );
 }
 
 void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* climate) {
@@ -224,6 +259,10 @@ void UartVrfComponent::on_climate_create_callback(vrf_protocol::VrfClimate* clim
     }
 
     if (!found) {
+      if (this->climates_.size() >= MAX_VRF_CLIMATES) {
+        ESP_LOGW(TAG, "Ignoring climate beyond the %d-entity component capacity", MAX_VRF_CLIMATES);
+        return;
+      }
       this->register_uart_climate(climate, climate->get_outer_idx());
     }
 }
@@ -288,9 +327,14 @@ void UartVrfComponent::loop() {
         return;
     }
 
+    bool consumed_data = false;
     while(available() > 0) {
+        consumed_data = true;
         uint8_t c = read();
         this->vrf_gateway_wrapper_->consume_data(c);
+    }
+    if (!consumed_data) {
+      this->vrf_gateway_wrapper_->on_uart_idle(millis());
     }
 }
 
@@ -320,7 +364,7 @@ void UartVrfComponent::find_climates() {
 
 void UartVrfComponent::fire_cmd() {
     unsigned long now = millis();
-    if (now - last_time_fire_cmd < 100) {
+    if (now - last_time_fire_cmd < timing::MIN_COMMAND_GAP_MS) {
         return;
     }
 

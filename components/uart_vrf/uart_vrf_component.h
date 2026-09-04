@@ -34,7 +34,9 @@ class VrfGatewayWrapper {
 
   public:
   void add_gateway(vrf_protocol::VrfGateway* gateway);
+  void add_gateway(vrf_protocol::VrfGateway* gateway, const char* protocol_name);
   void consume_data(uint8_t data);
+  void on_uart_idle(uint32_t now);
   vrf_protocol::VrfCmd cmd_find_climates();
   vrf_protocol::VrfCmd cmd_query_next_climate();
   std::vector<vrf_protocol::VrfClimate *> get_climates();
@@ -43,6 +45,7 @@ class VrfGatewayWrapper {
   // 目标
   vrf_protocol::VrfGateway* vrf_gateway_{nullptr};
   std::vector<vrf_protocol::VrfGateway*> gateways_;
+  std::vector<const char*> gateway_protocol_names_;
   uint8_t next_idx_{0};
 
   uint8_t get_next_idx();
@@ -79,6 +82,7 @@ protected:
   void fire_cmd();
   void find_climates();
   void query_next_climate();
+  void schedule_climate_initialization_check();
   optional<UartVrfClimateStoreState> restore_climate_state_();
   void initialize_climates_from_restore(const UartVrfClimateStoreState& state);
   void register_uart_climate(vrf_protocol::VrfClimate* climate, uint8_t outer_idx);

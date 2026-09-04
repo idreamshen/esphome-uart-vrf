@@ -1,0 +1,40 @@
+esphome:
+  name: {{ node_name }}
+  friendly_name: UART VRF E2E
+  platformio_options:
+    build_flags:
+      - -DUART_VRF_DISCOVERY_INTERVAL_MS=120
+      - -DUART_VRF_QUERY_INTERVAL_MS=80
+      - -DUART_VRF_COMMAND_INTERVAL_MS=20
+      - -DUART_VRF_MIN_COMMAND_GAP_MS=5
+      - -DUART_VRF_INITIALIZATION_CHECK_INTERVAL_MS=5000
+      - -DUART_VRF_ZHONGHONG_POST_CONTROL_DELAY_MS=200
+      - -DUART_VRF_REBOOT_DELAY_MS=10
+
+host:
+
+external_components:
+  - source:
+      type: local
+      path: "{{ components_path }}"
+    components:
+      - uart_vrf
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+api:
+  port: {{ api_port }}
+  reboot_timeout: 0s
+
+preferences:
+  flash_write_interval: 0s
+
+uart:
+  - id: vrf_uart
+    port: "{{ uart_path }}"
+    baud_rate: 9600
+
+uart_vrf:
+  uart_id: vrf_uart

@@ -84,6 +84,7 @@ class VrfGateway {
     public:
     VrfGateway(uint8_t slave_addr) { this->slave_addr_=slave_addr;};
     virtual void consume_data(uint8_t data) = 0;
+    virtual void on_uart_idle(uint32_t) {}
     virtual VrfCmd cmd_find_climates() = 0;
     VrfCmd cmd_query_next_climate();
 

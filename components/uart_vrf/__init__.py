@@ -6,7 +6,7 @@ from esphome.core import CORE
 
 
 DEPENDENCIES = ['uart']
-AUTO_LOAD = ['climate']
+AUTO_LOAD = ['binary_sensor', 'climate']
 
 VRF_ID = 'uart_vrf_id'
 
