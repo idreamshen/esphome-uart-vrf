@@ -102,9 +102,8 @@ namespace vrf_protocol {
             }
 
             if (this->data_[0] != this->slave_addr_) {
-                // Not my data
-                this->data_.clear();
-                return;
+                this->data_.erase(this->data_.begin(), this->data_.begin() + 12);
+                continue;
             }
 
             // Handle based on command type

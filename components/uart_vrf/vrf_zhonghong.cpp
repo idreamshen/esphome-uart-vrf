@@ -3,11 +3,72 @@
 #include "esphome.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
+#include "uart_vrf_timing.h"
 #include "vrf_zhonghong.h"
 
 namespace vrf_protocol {
 
     static const char *const TAG = "vrf_protocol.zhonghong";
+    static constexpr uint8_t MAX_CLIMATES_PER_RESPONSE = 64;
+    static constexpr uint32_t FRAME_GAP_TIMEOUT_MS = 100;
+
+    static size_t frame_length_at(
+        const std::vector<uint8_t>& data,
+        size_t offset,
+        uint8_t slave_addr
+    ) {
+        if (data.size() - offset < 6 || data[offset] != slave_addr) {
+            return 0;
+        }
+
+        uint8_t func = data[offset + 1];
+        bool is_control =
+            func >= uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_SWITCH) &&
+            func <= uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_FAN_MODE);
+        if (is_control) {
+            return 6;
+        }
+        if (func != uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY)) {
+            return 0;
+        }
+
+        uint8_t func_value = data[offset + 2];
+        uint8_t num = data[offset + 3];
+        if (num > MAX_CLIMATES_PER_RESPONSE) {
+            return 0;
+        }
+
+        size_t record_length = 0;
+        if (
+            func_value == uint8_t(
+                VrfZhonghongFuncValue::ZHONG_HONG_FUNC_VALUE_ONLINE
+            )
+        ) {
+            record_length = 3;
+        } else if (
+            func_value == uint8_t(
+                VrfZhonghongFuncValue::ZHONG_HONG_FUNC_VALUE_SINGLE
+            )
+        ) {
+            if (num > 1) {
+                return 0;
+            }
+            record_length = 10;
+        } else if (
+            func_value == uint8_t(
+                VrfZhonghongFuncValue::ZHONG_HONG_FUNC_VALUE_MULTI
+            ) ||
+            func_value == uint8_t(
+                VrfZhonghongFuncValue::ZHONG_HONG_FUNC_VALUE_ALL
+            )
+        ) {
+            record_length = 10;
+        } else {
+            return 0;
+        }
+
+        return 4 + size_t(num) * record_length + 1;
+    }
 
     void VrfZhonghongGateway::consume_data_handle_found_climates() {
         uint8_t num = this->data_[3]; // 空调数量
@@ -18,7 +79,7 @@ namespace vrf_protocol {
             uint8_t online = this->data_[4 + i * 3 + 2];
 
             if (online == 1) {
-                VrfZhonghongClimate* target_climate = this->find_or_create_climate(outdoor_addr, indoor_addr);
+                this->find_or_create_climate(outdoor_addr, indoor_addr);
             }
         }
     }
@@ -86,48 +147,34 @@ namespace vrf_protocol {
 
 
     void VrfZhonghongGateway::consume_data(uint8_t data) {
+        uint32_t now = esphome::millis();
+        this->on_uart_idle(now);
+        this->last_data_time_ = now;
         this->data_.push_back(data);
+        this->process_buffer(false);
+    }
 
+    void VrfZhonghongGateway::process_buffer(bool frame_timed_out) {
         while (this->data_.size() >= 6) {
 
-            uint8_t slave_addr = this->data_[0];
-            if (slave_addr != this->slave_addr_) {
-                this->data_.erase(this->data_.begin(), this->data_.begin() + 1);
+            size_t length = frame_length_at(this->data_, 0, this->slave_addr_);
+            if (length == 0) {
+                this->data_.erase(this->data_.begin());
+                continue;
+            }
+
+            if (this->data_.size() < length) {
+                // A valid payload can contain another checksum-valid frame.
+                if (!frame_timed_out) {
+                    break;
+                }
+                this->data_.erase(this->data_.begin());
                 continue;
             }
 
             uint8_t func = this->data_[1];
-            if (func < uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_SWITCH) || func > uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY)) {
-                this->data_.erase(this->data_.begin(), this->data_.begin() + 2);
-                continue;
-            }
 
-            uint8_t length = 0; // 完整命令长度
-            if (func >= uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_SWITCH) && func <= uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_CTRL_FAN_MODE)) {
-                length = 6;
-            }
-
-            if (func == uint8_t(VrfZhonghongFunc::ZHONG_HONG_FUNC_QUERY)) {
-                uint8_t func_value = this->data_[2];
-                uint8_t num = this->data_[3];
-
-                if (func_value == uint8_t(VrfZhonghongFuncValue::ZHONG_HONG_FUNC_VALUE_ONLINE)) {
-                    length = 4 + num * 3 + 1;
-                } else {
-                    length = 4 + num * 10 + 1;
-                }
-            }
-
-            if (this->data_.size() < length) {
-                break;
-            }
-
-            if (length == 0) {
-                this->data_.clear();
-                continue;
-            }
-
-            uint8_t sum = checksum(std::vector<uint8_t>(this->data_.begin(), this->data_.begin() + length - 1));
+            uint8_t sum = checksum(this->data_.data(), length - 1);
 
             if (sum != this->data_[length - 1]) {
                 // checksum failed
@@ -148,6 +195,14 @@ namespace vrf_protocol {
 
             ESP_LOGD(TAG, "consume succ, data=%s", esphome::format_hex_pretty(this->data_.data(), length).c_str());
             this->data_.erase(this->data_.begin(), this->data_.begin() + length);
+        }
+    }
+
+    void VrfZhonghongGateway::on_uart_idle(uint32_t now) {
+        if (!this->data_.empty() && now - this->last_data_time_ >= FRAME_GAP_TIMEOUT_MS) {
+            ESP_LOGW(TAG, "Resynchronizing incomplete frame after UART gap");
+            this->process_buffer(true);
+            this->data_.clear();
         }
     }
 
@@ -189,9 +244,8 @@ namespace vrf_protocol {
 
     VrfCmd VrfZhonghongClimate::cmd_query() {
         unsigned long now = esphome::millis();
-        if (now - last_time_ctrl < 2000) {
-            // 如果控制指令与查询指令间隔小于 2s
-            // 则不进行查询
+        if (now - last_time_ctrl < esphome::uart_vrf::timing::ZHONGHONG_POST_CONTROL_DELAY_MS) {
+            // Skip queries until the post-control delay has elapsed.
             return VrfCmd();
         }
 

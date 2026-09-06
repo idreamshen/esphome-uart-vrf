@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -9,7 +10,8 @@
 
 namespace vrf_protocol {
 
-uint8_t checksum(std::vector<uint8_t> cmd);
+uint8_t checksum(const uint8_t* data, size_t length);
+uint8_t checksum(const std::vector<uint8_t>& cmd);
 uint16_t crc16(std::vector<uint8_t> cmd);
 
 class VrfCmd {
@@ -84,6 +86,7 @@ class VrfGateway {
     public:
     VrfGateway(uint8_t slave_addr) { this->slave_addr_=slave_addr;};
     virtual void consume_data(uint8_t data) = 0;
+    virtual void on_uart_idle(uint32_t) {}
     virtual VrfCmd cmd_find_climates() = 0;
     VrfCmd cmd_query_next_climate();
 

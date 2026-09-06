@@ -1,0 +1,49 @@
+#pragma once
+
+#include <cstdint>
+
+#ifndef UART_VRF_DISCOVERY_INTERVAL_MS
+#define UART_VRF_DISCOVERY_INTERVAL_MS 5000U
+#endif
+
+#ifndef UART_VRF_QUERY_INTERVAL_MS
+#define UART_VRF_QUERY_INTERVAL_MS 1000U
+#endif
+
+#ifndef UART_VRF_COMMAND_INTERVAL_MS
+#define UART_VRF_COMMAND_INTERVAL_MS 300U
+#endif
+
+#ifndef UART_VRF_MIN_COMMAND_GAP_MS
+#define UART_VRF_MIN_COMMAND_GAP_MS 100U
+#endif
+
+#ifndef UART_VRF_INITIALIZATION_CHECK_INTERVAL_MS
+#define UART_VRF_INITIALIZATION_CHECK_INTERVAL_MS 10000U
+#endif
+
+#ifndef UART_VRF_ZHONGHONG_POST_CONTROL_DELAY_MS
+#define UART_VRF_ZHONGHONG_POST_CONTROL_DELAY_MS 2000U
+#endif
+
+#ifndef UART_VRF_REBOOT_DELAY_MS
+#define UART_VRF_REBOOT_DELAY_MS 100U
+#endif
+
+namespace esphome {
+namespace uart_vrf {
+namespace timing {
+
+static constexpr uint32_t DISCOVERY_INTERVAL_MS = UART_VRF_DISCOVERY_INTERVAL_MS;
+static constexpr uint32_t QUERY_INTERVAL_MS = UART_VRF_QUERY_INTERVAL_MS;
+static constexpr uint32_t COMMAND_INTERVAL_MS = UART_VRF_COMMAND_INTERVAL_MS;
+static constexpr uint32_t MIN_COMMAND_GAP_MS = UART_VRF_MIN_COMMAND_GAP_MS;
+static constexpr uint32_t INITIALIZATION_CHECK_INTERVAL_MS =
+    UART_VRF_INITIALIZATION_CHECK_INTERVAL_MS;
+static constexpr uint32_t ZHONGHONG_POST_CONTROL_DELAY_MS =
+    UART_VRF_ZHONGHONG_POST_CONTROL_DELAY_MS;
+static constexpr uint32_t REBOOT_DELAY_MS = UART_VRF_REBOOT_DELAY_MS;
+
+}  // namespace timing
+}  // namespace uart_vrf
+}  // namespace esphome

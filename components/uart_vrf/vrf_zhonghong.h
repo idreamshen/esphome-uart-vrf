@@ -41,13 +41,16 @@ namespace vrf_protocol {
         public:
         VrfZhonghongGateway(uint8_t slave_addr) : VrfGateway(slave_addr) {};
         void consume_data(uint8_t data) override;
+        void on_uart_idle(uint32_t now) override;
         VrfCmd cmd_find_climates() override;
         VrfZhonghongClimate* find_or_create_climate(uint8_t outdoor_addr, uint8_t indoor_addr);
 
         protected:
         std::vector<uint8_t> data_;
+        uint32_t last_data_time_{0};
 
         private:
+        void process_buffer(bool frame_timed_out);
         void consume_data_handle_found_climates();
         void consume_data_handle_query_climate();
     };

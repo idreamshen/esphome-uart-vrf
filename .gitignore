@@ -1,2 +1,8 @@
-__pycache__
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.tmp/
+host-e2e-results/
+.esphome/
 *.~undo-tree~

@@ -8,13 +8,17 @@
 
 namespace vrf_protocol {
 
-uint8_t checksum(std::vector<uint8_t> cmd) {
+uint8_t checksum(const uint8_t* data, size_t length) {
     uint8_t sum = 0;
-    for (uint8_t i = 0; i < cmd.size(); i++)
+    for (size_t i = 0; i < length; i++)
     {
-        sum = sum + cmd[i];
+        sum = sum + data[i];
     }
     return sum;
+}
+
+uint8_t checksum(const std::vector<uint8_t>& cmd) {
+    return checksum(cmd.data(), cmd.size());
 }
 
 uint16_t crc16(std::vector<uint8_t> cmd) {
