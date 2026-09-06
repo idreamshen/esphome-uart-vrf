@@ -50,6 +50,7 @@ namespace vrf_protocol {
         uint32_t last_data_time_{0};
 
         private:
+        void process_buffer(bool frame_timed_out);
         void consume_data_handle_found_climates();
         void consume_data_handle_query_climate();
     };

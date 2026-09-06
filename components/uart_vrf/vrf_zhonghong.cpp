@@ -147,9 +147,14 @@ namespace vrf_protocol {
 
 
     void VrfZhonghongGateway::consume_data(uint8_t data) {
-        this->last_data_time_ = esphome::millis();
+        uint32_t now = esphome::millis();
+        this->on_uart_idle(now);
+        this->last_data_time_ = now;
         this->data_.push_back(data);
+        this->process_buffer(false);
+    }
 
+    void VrfZhonghongGateway::process_buffer(bool frame_timed_out) {
         while (this->data_.size() >= 6) {
 
             size_t length = frame_length_at(this->data_, 0, this->slave_addr_);
@@ -159,42 +164,17 @@ namespace vrf_protocol {
             }
 
             if (this->data_.size() < length) {
-                bool resynchronized = false;
-                for (size_t offset = 1; offset + 6 <= this->data_.size(); offset++) {
-                    size_t candidate_length = frame_length_at(
-                        this->data_, offset, this->slave_addr_
-                    );
-                    if (
-                        candidate_length == 0 ||
-                        this->data_.size() - offset < candidate_length
-                    ) {
-                        continue;
-                    }
-                    uint8_t candidate_sum = checksum(
-                        std::vector<uint8_t>(
-                            this->data_.begin() + offset,
-                            this->data_.begin() + offset + candidate_length - 1
-                        )
-                    );
-                    if (candidate_sum != this->data_[offset + candidate_length - 1]) {
-                        continue;
-                    }
-                    this->data_.erase(
-                        this->data_.begin(),
-                        this->data_.begin() + offset
-                    );
-                    resynchronized = true;
+                // A valid payload can contain another checksum-valid frame.
+                if (!frame_timed_out) {
                     break;
                 }
-                if (resynchronized) {
-                    continue;
-                }
-                break;
+                this->data_.erase(this->data_.begin());
+                continue;
             }
 
             uint8_t func = this->data_[1];
 
-            uint8_t sum = checksum(std::vector<uint8_t>(this->data_.begin(), this->data_.begin() + length - 1));
+            uint8_t sum = checksum(this->data_.data(), length - 1);
 
             if (sum != this->data_[length - 1]) {
                 // checksum failed
@@ -220,7 +200,8 @@ namespace vrf_protocol {
 
     void VrfZhonghongGateway::on_uart_idle(uint32_t now) {
         if (!this->data_.empty() && now - this->last_data_time_ >= FRAME_GAP_TIMEOUT_MS) {
-            ESP_LOGW(TAG, "Discarding incomplete frame after UART gap");
+            ESP_LOGW(TAG, "Resynchronizing incomplete frame after UART gap");
+            this->process_buffer(true);
             this->data_.clear();
         }
     }

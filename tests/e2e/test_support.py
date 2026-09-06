@@ -135,8 +135,10 @@ async def test_native_api_connect_honors_deadline(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("expected_count", [None, 1])
 async def test_native_api_entity_snapshot_reconnects_after_error(
     monkeypatch: pytest.MonkeyPatch,
+    expected_count: int | None,
 ) -> None:
     climate = type("ClimateInfo", (), {"supported_modes": ()})()
     first = _EntitySnapshotClient(RuntimeError("connection closed"))
@@ -148,12 +150,118 @@ async def test_native_api_entity_snapshot_reconnects_after_error(
     entities = await adapter.wait_for_climate_entities(
         timeout=0.5,
         interval=0.001,
+        expected_count=expected_count,
     )
 
     assert entities == [climate]
     assert first.disconnect_calls == 1
     assert adapter.client is second
     await adapter.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("initial_count", [0, 1, 3])
+async def test_native_api_entity_snapshot_requires_exact_count(
+    monkeypatch: pytest.MonkeyPatch,
+    initial_count: int,
+) -> None:
+    climates = [type("ClimateInfo", (), {})() for _ in range(3)]
+    first = _EntitySnapshotClient((climates[:initial_count], []))
+    second = _EntitySnapshotClient((climates[:2], []))
+    clients = iter((first, second))
+    adapter = NativeApiAdapter("127.0.0.1", 6053)
+    adapter.latest_states[123] = object()
+
+    def callback(state: object) -> None:
+        pass
+
+    adapter._state_callbacks.add(callback)
+    monkeypatch.setattr(adapter, "_make_client", lambda: next(clients))
+
+    entities = await adapter.wait_for_climate_entities(
+        timeout=0.5,
+        interval=0.001,
+        expected_count=2,
+    )
+
+    assert entities == climates[:2]
+    assert first.disconnect_calls == 1
+    assert second.disconnect_calls == 0
+    assert adapter.client is second
+    assert not adapter.latest_states
+    assert callback in adapter._state_callbacks
+    await adapter.disconnect()
+
+
+@pytest.mark.asyncio
+async def test_native_api_entity_snapshot_shares_connect_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    climate = type("ClimateInfo", (), {})()
+
+    class SlowSnapshotClient(_EntitySnapshotClient):
+        async def connect(self, *, login: bool) -> None:
+            await super().connect(login=login)
+            await asyncio.sleep(0.06)
+
+        async def list_entities_services(self) -> object:
+            await asyncio.sleep(0.06)
+            return await super().list_entities_services()
+
+    client = SlowSnapshotClient(([climate], []))
+    adapter = NativeApiAdapter("127.0.0.1", 6053)
+    monkeypatch.setattr(adapter, "_make_client", lambda: client)
+
+    with pytest.raises(WaitTimeoutError, match="waiting for climate entities"):
+        await adapter.wait_for_climate_entities(timeout=0.1)
+
+    assert client.disconnect_calls == 1
+    assert adapter.client is None
+
+
+@pytest.mark.asyncio
+async def test_native_api_entity_snapshot_times_out_stuck_enumeration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cancelled = asyncio.Event()
+
+    class StuckSnapshotClient(_EntitySnapshotClient):
+        async def list_entities_services(self) -> object:
+            try:
+                await asyncio.Future()
+            finally:
+                cancelled.set()
+
+    client = StuckSnapshotClient(([], []))
+    adapter = NativeApiAdapter("127.0.0.1", 6053)
+    adapter.latest_states[123] = object()
+    monkeypatch.setattr(adapter, "_make_client", lambda: client)
+
+    async with asyncio.timeout(0.5):
+        with pytest.raises(WaitTimeoutError, match="waiting for climate entities"):
+            await adapter.wait_for_climate_entities(timeout=0.02)
+
+    assert cancelled.is_set()
+    assert client.disconnect_calls == 1
+    assert adapter.client is None
+    assert not adapter.latest_states
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("expected_count", [0, -1, True, False, 1.5, "2"])
+async def test_native_api_entity_snapshot_rejects_invalid_counts(
+    monkeypatch: pytest.MonkeyPatch,
+    expected_count: Any,
+) -> None:
+    adapter = NativeApiAdapter("127.0.0.1", 6053)
+
+    def unexpected_client() -> None:
+        pytest.fail("Invalid counts must be rejected before connecting")
+
+    monkeypatch.setattr(adapter, "_make_client", unexpected_client)
+
+    with pytest.raises(ValueError, match="expected_count must be a positive integer"):
+        await adapter.wait_for_climate_entities(expected_count=expected_count)
 
 
 @pytest.mark.asyncio

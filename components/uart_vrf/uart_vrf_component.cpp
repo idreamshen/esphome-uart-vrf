@@ -19,8 +19,7 @@ void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway) {
 }
 
 void VrfGatewayWrapper::add_gateway(vrf_protocol::VrfGateway* gateway, const char* protocol_name) {
-    this->gateways_.push_back(gateway);
-    this->gateway_protocol_names_.push_back(protocol_name != nullptr ? protocol_name : "unknown");
+    this->gateways_.push_back({gateway, protocol_name != nullptr ? protocol_name : "unknown"});
 }
 
 void VrfGatewayWrapper::on_uart_idle(uint32_t now) {
@@ -28,9 +27,10 @@ void VrfGatewayWrapper::on_uart_idle(uint32_t now) {
       this->vrf_gateway_->on_uart_idle(now);
       return;
     }
-    for (auto& gateway : this->gateways_) {
-      gateway->on_uart_idle(now);
+    for (auto& entry : this->gateways_) {
+      entry.gateway->on_uart_idle(now);
     }
+    this->detect_protocol();
 }
 
 void VrfGatewayWrapper::consume_data(uint8_t data) {
@@ -39,18 +39,19 @@ void VrfGatewayWrapper::consume_data(uint8_t data) {
       return;
     }
 
-    for (size_t i = 0; i < this->gateways_.size(); i++) {
-      auto* gateway = this->gateways_[i];
-      if (gateway->get_climates().size() > 0) {
-        this->vrf_gateway_ = gateway;
-        ESP_LOGI(TAG, "VRF protocol locked: %s", this->gateway_protocol_names_[i]);
-        this->vrf_gateway_->consume_data(data);
+    for (auto& entry : this->gateways_) {
+      entry.gateway->consume_data(data);
+    }
+    this->detect_protocol();
+}
+
+void VrfGatewayWrapper::detect_protocol() {
+    for (auto& entry : this->gateways_) {
+      if (!entry.gateway->get_climates().empty()) {
+        this->vrf_gateway_ = entry.gateway;
+        ESP_LOGI(TAG, "VRF protocol locked: %s", entry.protocol_name);
         return;
       }
-    }
-
-    for (auto& gateway : this->gateways_) {
-      gateway->consume_data(data);
     }
 }
 
@@ -79,7 +80,7 @@ vrf_protocol::VrfCmd VrfGatewayWrapper::cmd_find_climates() {
         return {};
     }
 
-    vrf_protocol::VrfCmd cmd = this->gateways_[this->get_next_idx()]->cmd_find_climates();
+    vrf_protocol::VrfCmd cmd = this->gateways_[this->get_next_idx()].gateway->cmd_find_climates();
     this->incr_next_idx();
     return cmd;
 }

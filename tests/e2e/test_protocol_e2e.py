@@ -204,13 +204,11 @@ async def test_fixed_length_parser_recovers_after_bad_frame_overlap(
         await native_api.disconnect()
 
         await simulator.write(simulator.encode_discovery_response())  # type: ignore[attr-defined]
-        initial_response = simulator.encode_state_response()  # type: ignore[attr-defined]
-        await simulator.write(initial_response[:1])
         await simulator.wait_for_frame(is_state_query, timeout=2)
         await native_api.connect(timeout=2)
         climates = await native_api.wait_for_climate_entities(timeout=2)
         assert len(climates) == 1
-        await simulator.write(initial_response[1:])
+        await simulator.write(simulator.encode_state_response())  # type: ignore[attr-defined]
 
         state.current_temperature = 31
         response = simulator.encode_state_response()  # type: ignore[attr-defined]
@@ -238,6 +236,14 @@ async def test_fixed_length_parser_recovers_after_bad_frame_overlap(
             id="single-count-overflow",
         ),
         pytest.param(b"\x01", id="invalid-function"),
+        pytest.param(
+            bytes.fromhex("01 50 02 40"),
+            id="truncated-discovery-before-complete-response",
+        ),
+        pytest.param(
+            bytes.fromhex("01 50 02 01 02 01 01 00"),
+            id="bad-checksum",
+        ),
     ],
 )
 async def test_zhonghong_parser_recovers_after_malformed_prefix(
@@ -275,12 +281,6 @@ async def test_zhonghong_parser_recovers_after_malformed_prefix(
         await simulator.write(
             malformed_prefix + simulator.encode_discovery_response(),
             fragment_sizes=(1, 2, 3),
-            inter_fragment_delay=0.005,
-        )
-        await simulator.write(
-            simulator.encode_state_response(),
-            fragment_sizes=(1, 2, 3),
-            delay=0.05,
             inter_fragment_delay=0.005,
         )
         await simulator.wait_for_frame(
@@ -322,7 +322,6 @@ async def test_demry_discards_complete_foreign_slave_frame(
         await simulator.write(
             foreign_state + simulator.encode_discovery_response()
         )
-        await simulator.write(simulator.encode_state_response()[:1])
         await simulator.wait_for_frame(CASES[0].is_state_query, timeout=2)
 
         climates = await native_api.wait_for_climate_entities(timeout=2)
@@ -357,24 +356,131 @@ async def test_zhonghong_accepts_64_unit_discovery_response(
         discovery_response = simulator.encode_discovery_response()
         assert discovery_response[3] == 64
         await simulator.write(discovery_response)
-        await simulator.write(b"\x00")
         await simulator.wait_for_frame(CASES[2].is_state_query, timeout=2)
 
-        deadline = asyncio.get_running_loop().time() + 2
-        climates = []
-        while len(climates) != 32:
-            remaining = deadline - asyncio.get_running_loop().time()
-            if remaining <= 0:
-                raise TimeoutError(
-                    f"expected 32 climate entities, found {len(climates)}"
-                )
-            await native_api.connect(timeout=remaining)
-            climates = await native_api.climate_entities()
-            if len(climates) != 32:
-                await native_api.disconnect()
-                await asyncio.sleep(min(0.05, remaining))
+        climates = await native_api.wait_for_climate_entities(
+            expected_count=32, timeout=2
+        )
 
         assert len({climate.key for climate in climates}) == 32
+        host_process.assert_running()
+    finally:
+        await native_api.disconnect()
+        await simulator.stop()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("count", [25, 26, 64])
+@pytest.mark.parametrize("query_type", [0x0F, 0xFF], ids=["multi", "all"])
+async def test_zhonghong_accepts_large_state_response(
+    count: int,
+    query_type: int,
+    pty_uart: PtyUart,
+    host_process: HostProcess,
+    native_api: NativeApiAdapter,
+    trace: JsonlTrace,
+) -> None:
+    states = {
+        (2, address): ClimateState(
+            address=address,
+            power=True,
+            mode=ClimateMode.COOL,
+            target_temperature=22,
+            current_temperature=31,
+        )
+        for address in range(1, count + 1)
+    }
+    simulator = ZhonghongSimulator(
+        pty_uart.fileno(), states, trace=_trace_simulator(trace)
+    )
+    simulator.auto_respond = False
+    simulator.start()
+    try:
+        await simulator.wait_for_frame(CASES[2].is_discovery_request, timeout=10)
+        await simulator.write(simulator.encode_discovery_response())
+        await simulator.wait_for_frame(CASES[2].is_state_query, timeout=2)
+        climates = await native_api.wait_for_climate_entities(
+            expected_count=min(count, 32), timeout=2
+        )
+
+        records = b"".join(
+            simulator.encode_state_response(outdoor, indoor)[4:-1]
+            for outdoor, indoor in sorted(states)
+        )
+        response = simulator.with_checksum(
+            bytes((1, 0x50, query_type, count)) + records
+        )
+        assert len(response) == 5 + count * 10
+        await simulator.write(response)
+        for climate in climates:
+            await native_api.wait_for_state(
+                lambda value, key=climate.key: _is_climate_state(value, key)
+                and value.current_temperature == pytest.approx(31),
+                timeout=2,
+                description=f"{count}-record Zhonghong state response",
+            )
+        simulator.clear_queues()
+        await simulator.wait_for_frame(
+            lambda frame: len(frame) == 7 and frame[1:4] == b"\x50\x01\x01",
+            timeout=2,
+        )
+        host_process.assert_running()
+    finally:
+        await native_api.disconnect()
+        await simulator.stop()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "response",
+    [
+        bytes.fromhex("01 50 02 03 02 01 01 31 01 01 01 35 01 c4"),
+        bytes.fromhex("01 50 02 03 00 02 01 31 00 01 00 33 01 bf"),
+    ],
+    ids=["power-on-ack", "power-off-ack"],
+)
+@pytest.mark.parametrize("fragment_sizes", [None, (12, 2)], ids=["whole", "split"])
+async def test_zhonghong_preserves_discovery_containing_ack(
+    response: bytes,
+    fragment_sizes: tuple[int, ...] | None,
+    pty_uart: PtyUart,
+    host_process: HostProcess,
+    native_api: NativeApiAdapter,
+    trace: JsonlTrace,
+) -> None:
+    addresses = [tuple(response[offset:offset + 2]) for offset in range(4, 13, 3)]
+    states = {
+        (outdoor, indoor): ClimateState(address=indoor)
+        for outdoor, indoor in addresses
+    }
+    simulator = ZhonghongSimulator(
+        pty_uart.fileno(), states, trace=_trace_simulator(trace)
+    )
+    simulator.auto_respond = False
+    simulator.start()
+    try:
+        await simulator.wait_for_frame(CASES[2].is_discovery_request, timeout=10)
+        assert response == simulator.with_checksum(response[:-1])
+        assert response[6:12] == simulator.with_checksum(response[6:11])
+        await simulator.write(
+            response,
+            fragment_sizes=fragment_sizes,
+            inter_fragment_delay=0.02,
+        )
+        for outdoor, indoor in addresses:
+            await simulator.wait_for_frame(
+                lambda frame, address=bytes((outdoor, indoor)): len(frame) == 7
+                and frame[1:4] == b"\x50\x01\x01"
+                and frame[4:6] == address,
+                timeout=2,
+            )
+        indoor_addresses = {indoor for _outdoor, indoor in addresses}
+        climates = await native_api.wait_for_climate_entities(
+            expected_count=len(indoor_addresses), timeout=2
+        )
+        assert {climate.object_id for climate in climates} == {
+            f"1_{indoor}" for indoor in indoor_addresses
+        }
         host_process.assert_running()
     finally:
         await native_api.disconnect()
@@ -404,9 +510,7 @@ async def test_zhonghong_recovers_incomplete_frame_after_uart_gap(
         os.kill(host_process.pid, signal.SIGSTOP)
         try:
             await asyncio.sleep(0.15)
-            await simulator.write(
-                simulator.encode_discovery_response() + b"\x00"
-            )
+            await simulator.write(simulator.encode_discovery_response())
         finally:
             os.kill(host_process.pid, signal.SIGCONT)
         await simulator.wait_for_frame(CASES[2].is_state_query, timeout=2)
@@ -464,7 +568,6 @@ async def test_protocol_discovery_reboot_api_state_and_control(
             inter_fragment_delay=0.005,
         )
         initial_response = simulator.encode_state_response()  # type: ignore[attr-defined]
-        await simulator.write(b"\x00")
         await simulator.wait_for_frame(case.is_state_query, timeout=2)
         await native_api.connect(timeout=2)
         first_boot_climates = await native_api.wait_for_climate_entities(timeout=2)

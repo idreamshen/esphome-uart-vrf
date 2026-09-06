@@ -117,8 +117,15 @@ class NativeApiAdapter:
         *,
         timeout: float = 10.0,
         interval: float = 0.05,
+        expected_count: int | None = None,
     ) -> list[Any]:
-        """Reconnect until a non-empty climate entity snapshot is available."""
+        """Reconnect until a non-empty or exact-size climate snapshot is available."""
+        if expected_count is not None and (
+            isinstance(expected_count, bool)
+            or not isinstance(expected_count, int)
+            or expected_count <= 0
+        ):
+            raise ValueError("expected_count must be a positive integer or None")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
         if interval <= 0:
@@ -136,10 +143,12 @@ class NativeApiAdapter:
                 )
 
             try:
-                await self.connect(timeout=remaining)
                 async with asyncio.timeout(remaining):
+                    await self.connect(timeout=remaining)
                     entities = await self.climate_entities()
-                if entities:
+                if entities and (
+                    expected_count is None or len(entities) == expected_count
+                ):
                     return entities
             except Exception as error:
                 last_error = error

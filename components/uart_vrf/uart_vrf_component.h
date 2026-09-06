@@ -44,10 +44,14 @@ class VrfGatewayWrapper {
   private:
   // 目标
   vrf_protocol::VrfGateway* vrf_gateway_{nullptr};
-  std::vector<vrf_protocol::VrfGateway*> gateways_;
-  std::vector<const char*> gateway_protocol_names_;
+  struct GatewayEntry {
+    vrf_protocol::VrfGateway* gateway;
+    const char* protocol_name;
+  };
+  std::vector<GatewayEntry> gateways_;
   uint8_t next_idx_{0};
 
+  void detect_protocol();
   uint8_t get_next_idx();
   void incr_next_idx();
 };
